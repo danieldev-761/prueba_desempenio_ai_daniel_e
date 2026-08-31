@@ -71,30 +71,31 @@ The solution follows a modern, decoupled **Layered / Clean Architecture** patter
 
 ### 2.2 Orchestration Engine: LangGraph (`backend/app/services/graph_workflow.py`)
 Replaces linear automations with a state-aware Directed Acyclic Graph (DAG):
-1. **State Dictionary (`AgentState`):** Carries `query`, `session_id`, `cache_hit`, `documents`, `relevance_score`, `generation`, `is_escalated`, `escalation_reason`, and `token_metrics`.
+1. **State Dictionary (`AgentState`):** Carries `query`, `session_id`, `triage_hit`, `cache_hit`, `documents`, `relevance_score`, `generation`, `status`, `is_escalated`, `escalation_reason`, and `token_metrics`.
 2. **Conditional Routing:**
-   * **Node 1 (`check_cache`):** Queries the semantic cache collection. If cosine distance $\le 0.08$ ($\ge 92\%$ similarity), routes directly to completion.
-   * **Node 2 (`retrieve_context`):** Performs vector similarity search across chunked academy business documents.
-   * **Conditional Gate:** If top similarity $< 0.70$, routes to `escalate_human`.
-   * **Node 3 (`generate_answer`):** Invokes the selected LLM using zero-hallucination system prompt with 3 few-shot examples.
-   * **Node 4 (`grounding_verifier`):** Validates if the answer acknowledged missing data or returned `[[ESCALATE]]`. If ungrounded, routes to `escalate_human`.
-   * **Node 5 (`log_telemetry`):** Records interaction details into SQLite and returns the client payload.
+   * **Node 0 (`node_deterministic_triage` - ADR-012):** Evaluates incoming queries against `backend/app/core/frequent_issues.json` (8 operational categories: payments, platform, certificates, placement, schedules, freezes, textbooks, exams). If matched, returns diagnostic checklist with $0\text{ tokens}$ and $< 5\text{ ms}$ latency (`status="RESOLVED_BY_FAQ_TRIAGE"`), bypassing cache and RAG.
+   * **Node 1 (`check_cache`):** Queries the semantic cache collection with normalized cosine distance ($1 - d$). If similarity $\ge 0.82$, routes directly to completion (`status="RESOLVED_BY_CACHE"`).
+   * **Node 2 (`retrieve`):** Performs vector similarity search across chunked academy business documents.
+   * **Conditional Gate:** If top similarity $< 0.45$, routes to `escalate`.
+   * **Node 3 (`generate`):** Invokes the selected LLM using zero-hallucination, token-efficient system prompt with few-shot examples and closed-catalog negation logic (ADR-011).
+   * **Node 4 (`verify_grounding`):** Validates if the answer acknowledged missing data or returned `[[ESCALATE]]`. If ungrounded or out of scope, routes to `escalate`.
+   * **Node 5 (`finalize`):** Stores valid grounded answers in semantic cache and returns the client payload.
 
 ### 2.3 LLM & Embeddings Abstraction (`backend/app/services/llm_factory.py`)
 Uses the **Factory Pattern** driven by environment variables (`LLM_PROVIDER=openai` or `LLM_PROVIDER=gemini`):
-* **OpenAI:** `ChatOpenAI(model="gpt-4o-mini", temperature=0.0)` + `OpenAIEmbeddings(model="text-embedding-3-small")`.
-* **Gemini:** `ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite", temperature=0.0)` + `GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")`.
+* **Gemini (Primary Provider):** `ChatGoogleGenerativeAI(model="gemini-2.5-flash")` + `GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")` (3072 dimensions, ADR-010).
+* **OpenAI (Secondary Provider):** `ChatOpenAI(model="gpt-4o-mini", temperature=0.0)` + `OpenAIEmbeddings(model="text-embedding-3-small")`.
 
 ### 2.4 Vector Engine & Semantic Cache (`backend/app/services/vector_store.py`)
-* **Engine:** ChromaDB in persistent client mode stored at `./backend/data/chroma_db`.
+* **Engine:** ChromaDB in persistent client mode stored at `./backend/data/chroma_db` with `hnsw:space="cosine"`.
 * **Collections:**
   1. `academy_docs`: Ingests 3 core business documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`) chunked via `RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)`.
-  2. `semantic_cache`: Stores previous resolved queries and answers. Hit criteria: Cosine distance $\le 0.08$ ($\ge 92\%$ semantic similarity).
+  2. `semantic_cache`: Stores previously resolved queries and answers. Hit criteria: Cosine similarity $\ge 0.82$ (Cosine distance $\le 0.18$).
 
 ### 2.5 Relational Telemetry & Persistence (`backend/app/models/` & `backend/app/db/`)
 * **Engine:** SQLite with asynchronous I/O via **SQLAlchemy** (`sqlite+aiosqlite:///./backend/data/academy.db`).
 * **Entities:**
-  * `TelemetryLog`: `id`, `session_id`, `timestamp`, `channel`, `query`, `response`, `status` (`RESOLVED_BY_CACHE`, `RESOLVED_BY_RAG`, `ESCALATED_TO_HUMAN`), `latency_ms`, `prompt_tokens`, `completion_tokens`, `cost_usd`.
+  * `TelemetryLog`: `id`, `session_id`, `timestamp`, `channel`, `query`, `response`, `status` (`RESOLVED_BY_FAQ_TRIAGE`, `RESOLVED_BY_CACHE`, `RESOLVED_BY_RAG`, `ESCALATED_TO_HUMAN`), `latency_ms`, `prompt_tokens`, `completion_tokens`, `cost_usd`.
   * `EscalatedSession`: `id`, `session_id`, `full_name`, `national_id`, `channel`, `status`, `created_at`.
   * `LiveChatMessage`: `id`, `session_id`, `sender`, `message`, `timestamp`.
   * `StudentProfile`: `id`, `national_id`, `full_name`, `total_escalations_count`, `last_interaction_at`.
