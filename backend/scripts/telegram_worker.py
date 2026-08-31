@@ -33,6 +33,7 @@ async def run_telegram_poller():
     workflow = AcademyGraphWorkflow()
     offset = 0
     base_url = f"https://api.telegram.org/bot{token}"
+    processed_update_ids = set()
 
     print("[OK] Telegram Worker is live! Waiting for student messages...")
 
@@ -45,8 +46,19 @@ async def run_telegram_poller():
                     continue
 
                 data = resp.json()
-                for update in data.get("result", []):
-                    offset = update["update_id"] + 1
+                updates = data.get("result", [])
+                if updates:
+                    highest_id = max(u["update_id"] for u in updates)
+                    offset = highest_id + 1
+
+                for update in updates:
+                    update_id = update["update_id"]
+                    if update_id in processed_update_ids:
+                        continue
+                    processed_update_ids.add(update_id)
+                    if len(processed_update_ids) > 5000:
+                        processed_update_ids.clear()
+
                     message = update.get("message")
                     if not message:
                         continue

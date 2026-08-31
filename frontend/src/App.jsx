@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import HeroBanner from './components/HeroBanner';
 import ChatContainer from './components/ChatContainer';
@@ -80,6 +80,9 @@ export default function App() {
     }
   }, []);
 
+  // Guard against rapid duplicate submissions
+  const isSendingRef = useRef(false);
+
   // Sync messages with localStorage
   const updateMessages = (newMessages) => {
     setMessages(newMessages);
@@ -87,20 +90,25 @@ export default function App() {
   };
 
   const handleSendMessage = async (queryText) => {
-    if (!queryText.trim() || isLoading || isSessionResolved) return;
+    const trimmed = queryText?.trim();
+    if (!trimmed || isSendingRef.current || isLoading || isSessionResolved) return;
+    isSendingRef.current = true;
+    setIsLoading(true);
 
     const userMessage = {
       role: 'user',
-      content: queryText,
+      content: trimmed,
       timestamp: new Date().toISOString(),
     };
 
-    const updatedWithUser = [...messages, userMessage];
-    updateMessages(updatedWithUser);
-    setIsLoading(true);
+    setMessages((prev) => {
+      const next = [...prev, userMessage];
+      localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
 
     try {
-      const data = await sendChatMessage(queryText, sessionId, 'web');
+      const data = await sendChatMessage(trimmed, sessionId, 'web');
 
       const botMessage = {
         role: 'assistant',
@@ -113,11 +121,15 @@ export default function App() {
         timestamp: new Date().toISOString(),
       };
 
-      updateMessages([...updatedWithUser, botMessage]);
+      setMessages((prev) => {
+        const next = [...prev, botMessage];
+        localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
 
       // If escalated (e.g. Tier 3 exhaustion or ungrounded inquiry), open identification modal automatically
       if (data.escalated || data.status === 'ESCALATED_TO_HUMAN') {
-        setEscalationQueryContext(queryText);
+        setEscalationQueryContext(trimmed);
         setTimeout(() => {
           setIsEscalationModalOpen(true);
         }, 750);
@@ -132,13 +144,18 @@ export default function App() {
         escalated: true,
         timestamp: new Date().toISOString(),
       };
-      updateMessages([...updatedWithUser, errorMessage]);
-      setEscalationQueryContext(queryText);
+      setMessages((prev) => {
+        const next = [...prev, errorMessage];
+        localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
+      setEscalationQueryContext(trimmed);
       setTimeout(() => {
         setIsEscalationModalOpen(true);
       }, 750);
     } finally {
       setIsLoading(false);
+      isSendingRef.current = false;
     }
   };
 
