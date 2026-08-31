@@ -19,3 +19,4 @@
 - Lunes-31/08/2026-09:00 : Documentación de la transición al modelo gemini-embedding-001 en ADR-010 y backend/config.py para compatibilidad con la API v1beta de Google GenAI y soporte de embedContent
 - Lunes-31/08/2026-09:13 : Resolución determinista de rutas absolutas para CHROMA_PERSIST_DIR y DATABASE_URL en backend/app/core/config.py, sincronizando el almacén vectorial entre procesos y corrigiendo la búsqueda de similitud en el worker de Telegram
 - Lunes-31/08/2026-09:17 : Optimización de consumo de tokens en prompts.py mediante prohibición explícita de saludos repetitivos en respuestas intermedias, restringiendo el saludo exclusivamente al inicio de la sesión y purgando la caché semántica
+- Lunes-31/08/2026-09:27 : Implementación de ADR-011 en prompts.py y docs/ADR.md: lógica de negación fundamentada por catálogo exhaustivo y oferta de alternativas ante consultas de ítems no listados (ej. cursos de ruso), evitando falsos positivos de escalamiento humano

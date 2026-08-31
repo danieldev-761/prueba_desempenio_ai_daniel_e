@@ -187,4 +187,27 @@ Accepted.
 * **Pros:** Restores 100% operational compatibility with Google AI Studio `v1beta` API, generates stable 3072-dimensional dense vector representations, and resolves the 404 NOT_FOUND exception during ChromaDB ingestion.
 * **Cons:** Embedding dimension is 3072, requiring fresh ChromaDB collection initialization (`reset=True`) upon first ingestion.
 
+---
+
+## ADR-011: Exhaustive Catalog Negation and Alternative Routing Strategy
+
+### Context
+Under the strict Closed-World Assumption previously defined, any inquiry asking about an item not explicitly cited in the context (such as an unlisted language like "Russian", "Japanese", or "Mandarin", or unlisted payment methods like "Bitcoin") triggered the `[[ESCALATE]]` token. This overwhelmed human advisors with routine inquiries that can be resolved autonomously by logical deduction: since the official documents define an exhaustive, closed catalog of offered programs (English, French, German, Italian, Portuguese), the absence of a requested program constitutes verified evidence of non-availability.
+
+### Decision
+Refine the system prompt and few-shot reasoning exemplars to distinguish between **indeterminate inquiries** (requiring human escalation) and **exhaustive closed-catalog inquiries** (requiring authoritative negation with alternatives):
+1. **Authoritative Negation with Alternatives:** If the student asks for a language, schedule, or modality that does not appear in the context, but the context explicitly enumerates the academy's official offerings, the assistant must state clearly and politely that the requested item is not offered, immediately propose the official available alternatives, and **refrain from emitting `[[ESCALATE]]`**.
+2. **Escalation Scope Limitation:** The `[[ESCALATE]]` token is strictly reserved for:
+   - Services explicitly flagged as requiring human direction (e.g. corporate agreements over 15 people, debt renegotiations, exceptional force majeure).
+   - Legal, sworn, or certified translation services outside the academy's scope.
+   - Student issues requiring manual database access, grievance handling, or personalized academic coordination.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Prevents false-positive escalations, dramatically reduces advisor workload, provides instant customer satisfaction, and preserves commercial conversion opportunities by redirecting student interest to available courses.
+* **Cons:** Requires clear delineation in prompt engineering between catalog boundaries and unanswerable business policies.
+
+
 
