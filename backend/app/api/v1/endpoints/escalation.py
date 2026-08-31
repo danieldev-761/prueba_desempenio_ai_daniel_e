@@ -443,9 +443,11 @@ async def websocket_chat_endpoint(
                         prof.last_interaction_at = now
 
             await db.commit()
+            await db.refresh(chat_record)
 
             # Broadcast to all connected parties on this session
             broadcast_payload = {
+                "id": chat_record.id,
                 "session_id": session_id,
                 "sender": sender,
                 "sender_name": sender_name,

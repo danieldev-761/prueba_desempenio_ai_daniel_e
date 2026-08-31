@@ -50,7 +50,17 @@ export default function LiveAdvisorChat({ sessionInfo, onClose }) {
           setIsSessionClosed(true);
           return;
         }
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
+          const isDuplicate = prev.some(
+            (m) =>
+              m.sender === msg.sender &&
+              m.message === msg.message &&
+              Math.abs(new Date(m.timestamp || Date.now()) - new Date(msg.timestamp || Date.now())) < 4000
+          );
+          if (isDuplicate) return prev;
+          return [...prev, msg];
+        });
       } catch (e) {
         console.error('Error parsing live WS message:', e);
       }

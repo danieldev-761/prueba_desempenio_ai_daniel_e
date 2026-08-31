@@ -17,7 +17,7 @@ export default function Navbar({ onOpenAdminModal, onOpenContactModal, onOpenEsc
                 Matrículas Abiertas 2026
               </span>
             </div>
-            <p className="text-xs text-slate-400">Atención Académica y Admisiones 24/7</p>
+            <p className="text-xs text-slate-400">Atención Académica y Estudiantil 24/7</p>
           </div>
         </div>
 

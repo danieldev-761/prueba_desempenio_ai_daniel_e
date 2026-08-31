@@ -158,6 +158,13 @@ export default function AdminPortal({ adminKey, onLogout }) {
           // Only append if not already in list (prevent duplication)
           setSessionMessages((prev) => {
             if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
+            const isDuplicate = prev.some(
+              (m) =>
+                m.sender === msg.sender &&
+                m.message === msg.message &&
+                Math.abs(new Date(m.timestamp || Date.now()) - new Date(msg.timestamp || Date.now())) < 4000
+            );
+            if (isDuplicate) return prev;
             return [...prev, msg];
           });
         } catch (e) {
@@ -184,7 +191,7 @@ export default function AdminPortal({ adminKey, onLogout }) {
 
     const payload = {
       sender: 'admin',
-      sender_name: 'Asesor de Admisiones',
+      sender_name: 'Asesor Académico',
       message: inputMessage.trim(),
     };
     wsRef.current.send(JSON.stringify(payload));
@@ -250,7 +257,7 @@ export default function AdminPortal({ adminKey, onLogout }) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-white tracking-tight">Portal Administrativo de Admisiones</h1>
+              <h1 className="text-lg font-bold text-white tracking-tight">Portal Administrativo Académico</h1>
               <span className="text-[10px] uppercase tracking-wider font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">
                 Staff Control
               </span>
@@ -547,7 +554,7 @@ export default function AdminPortal({ adminKey, onLogout }) {
                             className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
                           >
                             <span className="text-[10px] font-bold text-slate-400 mb-1 px-1">
-                              {isAdmin ? 'Tú (Asesor de Admisiones)' : (m.sender_name || selectedSession.full_name)}
+                              {isAdmin ? 'Tú (Asesor Académico)' : (m.sender_name || selectedSession.full_name)}
                             </span>
                             <div
                               className={`max-w-[75%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-sm ${
