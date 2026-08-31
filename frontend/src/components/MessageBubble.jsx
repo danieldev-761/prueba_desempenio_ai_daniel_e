@@ -46,6 +46,7 @@ export default function MessageBubble({ message, onTriggerEscalation }) {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const isUser = message.role === 'user';
   const isEscalated = message.escalated || message.status === 'ESCALATED_TO_HUMAN';
+  const isTriage = message.status === 'RESOLVED_BY_FAQ_TRIAGE';
   const isCache = message.status === 'RESOLVED_BY_CACHE';
 
   if (isUser) {
@@ -65,7 +66,7 @@ export default function MessageBubble({ message, onTriggerEscalation }) {
     <div className="flex justify-start items-start gap-3 my-3">
       {/* Bot Icon */}
       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-        isEscalated ? 'bg-amber-600 text-white' : 'bg-slate-900 text-blue-400 border border-slate-700'
+        isEscalated ? 'bg-amber-600 text-white' : isTriage ? 'bg-purple-600 text-white' : 'bg-slate-900 text-blue-400 border border-slate-700'
       }`}>
         {isEscalated ? <AlertTriangle className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
       </div>
@@ -74,13 +75,19 @@ export default function MessageBubble({ message, onTriggerEscalation }) {
       <div className="max-w-3xl space-y-2">
         {/* Status Pill */}
         <div className="flex items-center gap-2">
-          {isCache && (
+          {isTriage && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-800 border border-purple-200">
+              <Zap className="w-2.5 h-2.5 text-purple-600" /> Guía de Autodiagnóstico Oficial
+            </span>
+          )}
+
+          {isCache && !isTriage && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
               <Zap className="w-2.5 h-2.5" /> Respuesta Verificada Inmediata
             </span>
           )}
 
-          {!isCache && !isEscalated && message.confidence_score > 0 && (
+          {!isCache && !isTriage && !isEscalated && message.confidence_score > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
               <CheckCircle2 className="w-2.5 h-2.5 text-blue-600" />
               Coincidencia Verificada ({(message.confidence_score * 100).toFixed(0)}%)

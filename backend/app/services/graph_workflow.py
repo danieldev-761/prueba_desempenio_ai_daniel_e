@@ -11,17 +11,19 @@ from app.core.prompts import SYSTEM_PROMPT, FEW_SHOT_EXAMPLES, ESCALATION_HUMAN_
 from app.services.llm_factory import get_chat_model
 from app.services.vector_store import VectorStoreService
 from app.services.cache_service import SemanticCacheService
+from app.services.frequent_issues_service import FrequentIssuesService
 
 
 class AgentState(TypedDict):
     query: str
     session_id: str
     channel: str
+    triage_hit: bool
     cache_hit: bool
     documents: List[Document]
     relevance_score: float
     generation: str
-    status: str  # RESOLVED_BY_CACHE | RESOLVED_BY_RAG | ESCALATED_TO_HUMAN
+    status: str  # RESOLVED_BY_FAQ_TRIAGE | RESOLVED_BY_CACHE | RESOLVED_BY_RAG | ESCALATED_TO_HUMAN
     is_escalated: bool
     escalation_reason: Optional[str]
     sources: List[Dict[str, Any]]
@@ -35,10 +37,12 @@ class AcademyGraphWorkflow:
         self,
         vector_store_service: Optional[VectorStoreService] = None,
         cache_service: Optional[SemanticCacheService] = None,
+        triage_service: Optional[FrequentIssuesService] = None,
         chat_model=None,
     ) -> None:
         self.vector_store_service = vector_store_service or VectorStoreService()
         self.cache_service = cache_service or SemanticCacheService()
+        self.triage_service = triage_service or FrequentIssuesService()
         self.chat_model = chat_model
         self.graph = self._build_graph()
 
@@ -46,6 +50,35 @@ class AcademyGraphWorkflow:
         if self.chat_model is not None:
             return self.chat_model
         return get_chat_model()
+
+    # --- NODE 0: Deterministic Zero-Token Triage (ADR-012) ---
+    def node_deterministic_triage(self, state: AgentState) -> Dict[str, Any]:
+        query = state["query"]
+        logger.info(f"LangGraph Node: node_deterministic_triage for query: '{query[:40]}...'")
+
+        match = self.triage_service.evaluate(query)
+        if match is not None:
+            latency = (time.perf_counter() - state.get("start_time", time.perf_counter())) * 1000.0
+            logger.info(f"Zero-Token Triage RESOLVED query '{query[:40]}...' via '{match['category']}'")
+            return {
+                "triage_hit": True,
+                "generation": match["response"],
+                "status": "RESOLVED_BY_FAQ_TRIAGE",
+                "is_escalated": False,
+                "escalation_reason": None,
+                "sources": [{
+                    "document": "frequent_issues.json",
+                    "section": match["title"],
+                    "chunk_id": match["category"],
+                }],
+                "relevance_score": 1.0,
+                "latency_ms": round(latency, 2),
+                "token_metrics": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "cost_usd": 0.0},
+            }
+
+        return {
+            "triage_hit": False,
+        }
 
     # --- NODE 1: Semantic Cache Lookup ---
     def node_check_cache(self, state: AgentState) -> Dict[str, Any]:
@@ -139,11 +172,9 @@ class AcademyGraphWorkflow:
             content = "".join([
                 part.get("text", "") if isinstance(part, dict) else str(part)
                 for part in raw_content
-            ])
-        elif isinstance(raw_content, str):
-            content = raw_content
+            ]).strip()
         else:
-            content = str(raw_content)
+            content = str(raw_content).strip()
 
         # Token usage extraction
         token_usage = getattr(response, "usage_metadata", None) or getattr(response, "response_metadata", {}).get("token_usage", {})
@@ -220,6 +251,11 @@ class AcademyGraphWorkflow:
         }
 
     # --- CONDITIONAL ROUTING EDGES ---
+    def route_triage_check(self, state: AgentState) -> str:
+        if state.get("triage_hit", False):
+            return "end"
+        return "check_cache"
+
     def route_cache_check(self, state: AgentState) -> str:
         if state.get("cache_hit", False):
             return "end"
@@ -243,6 +279,7 @@ class AcademyGraphWorkflow:
         builder = StateGraph(AgentState)
 
         # Add Nodes
+        builder.add_node("triage", self.node_deterministic_triage)
         builder.add_node("check_cache", self.node_check_cache)
         builder.add_node("retrieve", self.node_retrieve)
         builder.add_node("generate", self.node_generate)
@@ -250,8 +287,18 @@ class AcademyGraphWorkflow:
         builder.add_node("escalate", self.node_escalate)
         builder.add_node("finalize", self.node_cache_and_finalize)
 
-        # Set Entry Point
-        builder.set_entry_point("check_cache")
+        # Set Entry Point: Zero-Token Deterministic Triage Layer
+        builder.set_entry_point("triage")
+
+        # Edge 0: Triage check
+        builder.add_conditional_edges(
+            "triage",
+            self.route_triage_check,
+            {
+                "end": END,
+                "check_cache": "check_cache",
+            },
+        )
 
         # Edge 1: Cache check
         builder.add_conditional_edges(
@@ -302,6 +349,7 @@ class AcademyGraphWorkflow:
             "query": query.strip(),
             "session_id": session_id,
             "channel": channel,
+            "triage_hit": False,
             "cache_hit": False,
             "documents": [],
             "relevance_score": 0.0,
@@ -328,6 +376,7 @@ class AcademyGraphWorkflow:
             "query": query.strip(),
             "session_id": session_id,
             "channel": channel,
+            "triage_hit": False,
             "cache_hit": False,
             "documents": [],
             "relevance_score": 0.0,

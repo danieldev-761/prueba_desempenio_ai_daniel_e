@@ -9,6 +9,7 @@ class TokensConsumed(BaseModel):
 
 class MetricsSummary(BaseModel):
     total_queries_processed: int = Field(..., description="Total count of inquiries processed", example=340)
+    resolved_by_faq_triage: int = Field(default=0, description="Inquiries resolved by zero-token deterministic triage", example=45)
     resolved_by_cache: int = Field(..., description="Inquiries resolved by semantic cache", example=120)
     resolved_by_rag: int = Field(..., description="Inquiries resolved by RAG pipeline", example=185)
     escalated_to_human: int = Field(..., description="Inquiries escalated to human advisors", example=35)

@@ -44,6 +44,7 @@ async def get_metrics(
         )
 
     # Counts by status
+    triage_q = await db.scalar(select(func.count(TelemetryLog.id)).where(TelemetryLog.status == "RESOLVED_BY_FAQ_TRIAGE")) or 0
     cache_q = await db.scalar(select(func.count(TelemetryLog.id)).where(TelemetryLog.status == "RESOLVED_BY_CACHE")) or 0
     rag_q = await db.scalar(select(func.count(TelemetryLog.id)).where(TelemetryLog.status == "RESOLVED_BY_RAG")) or 0
     escalated_q = await db.scalar(select(func.count(TelemetryLog.id)).where(TelemetryLog.status == "ESCALATED_TO_HUMAN")) or 0
@@ -58,6 +59,7 @@ async def get_metrics(
 
     return MetricsSummary(
         total_queries_processed=total_q,
+        resolved_by_faq_triage=triage_q,
         resolved_by_cache=cache_q,
         resolved_by_rag=rag_q,
         escalated_to_human=escalated_q,

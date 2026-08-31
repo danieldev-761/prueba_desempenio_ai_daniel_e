@@ -209,5 +209,28 @@ Accepted.
 * **Pros:** Prevents false-positive escalations, dramatically reduces advisor workload, provides instant customer satisfaction, and preserves commercial conversion opportunities by redirecting student interest to available courses.
 * **Cons:** Requires clear delineation in prompt engineering between catalog boundaries and unanswerable business policies.
 
+---
+
+## ADR-012: Deterministic Pre-LLM FAQ & Issue Triage Engine
+
+### Context
+To dramatically optimize token consumption, eliminate cloud inference costs, and deliver sub-millisecond round-trip responses for predictable operational requests, the academy requires a pre-LLM deterministic triage layer. Repetitive student inquiries (such as payment failures, virtual campus login issues, certificate requests, placement tests, course freeze policies, schedule changes, book access codes, and exam preparation inquiries) do not require vector embedding calculations or generative LLM computation; they are best served with authoritative step-by-step diagnostic checklists.
+
+### Decision
+Implement a zero-token deterministic triage layer prior to semantic caching and RAG in LangGraph:
+1. Maintain a structured JSON knowledge base (`backend/app/data/frequent_issues.json`) containing 8 comprehensive operational categories with normalized keywords, regex patterns, diagnostic checklists, and quick-action pathways in Spanish.
+2. Implement `FrequentIssuesService` to perform microsecond pattern matching on incoming student queries without calling embedding models or LLMs.
+3. Insert `node_deterministic_triage` as the first node in `AcademyGraphWorkflow`. If a predictable issue matches, the node returns the self-help checklist with `status="RESOLVED_BY_FAQ_TRIAGE"`, `prompt_tokens=0`, `completion_tokens=0`, and `cost_usd=0.0`.
+4. If no pattern matches, the workflow transitions seamlessly to the semantic cache and vector retrieval stages.
+5. Track `resolved_by_faq_triage` in telemetry logs and expose token/cost savings in administrative analytics.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Eliminates 100% of LLM API costs and token usage for recurring technical and administrative issues, slashes response latency from ~2s to <5ms, delivers standardized troubleshooting steps to students, and reserves AI resources for genuinely complex academic inquiries.
+* **Cons:** The keyword and regex catalog must be maintained as new institutional procedures arise.
+
+
 
 

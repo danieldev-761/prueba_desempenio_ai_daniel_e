@@ -1,0 +1,172 @@
+[
+  {
+    "id": "problemas_de_pago",
+    "title": "Guía de Autodiagnóstico para Pagos y Facturación",
+    "keywords": [
+      "problema con el pago",
+      "problemas con el pago",
+      "error en el pago",
+      "falla en el pago",
+      "fallo en el pago",
+      "pago rechazado",
+      "tarjeta rechazada",
+      "no puedo pagar",
+      "pse no funciona",
+      "pse pendiente",
+      "descontaron el dinero",
+      "me debitaron pero no confirma",
+      "comprobante de pago",
+      "error de pasarela"
+    ],
+    "patterns": [
+      "problema.*pago",
+      "error.*pago",
+      "falla.*pago",
+      "pago.*rechazad",
+      "no puedo pagar",
+      "debitaron.*no confirma",
+      "tarjeta.*rechazad"
+    ],
+    "response": "⚠️ **Guía de Autodiagnóstico para Problemas de Pago:**\n\nSi experimentas inconvenientes con tu transacción, sigue estos pasos antes de solicitar escalamiento:\n\n1. **Verificación bancaria:** Revisa en tu aplicación bancaria si el dinero fue debitado o si la transacción fue bloqueada por tope diario o validación de doble factor (OTP).\n2. **Tiempos de pasarela PSE:** Si pagaste por PSE, las redes interbancarias pueden tardar entre 15 y 30 minutos en emitir la confirmación (estado 'Pendiente por banco'). No intentes realizar un segundo pago mientras no recibas el estado final.\n3. **Comprobante y Código CUS:** Ten a mano el número de referencia, código CUS (para PSE) o el comprobante en PDF emitido por la entidad.\n4. **Reporte y Confirmación Manual:** Si el valor fue descontado de tu cuenta pero no recibiste el correo de confirmación de matrícula tras 30 minutos, envía tu comprobante a **pagos@academiaidiomas.edu.co** o conéctate con un asesor en vivo para validar manualmente tu registro en el sistema."
+  },
+  {
+    "id": "acceso_plataforma",
+    "title": "Guía de Acceso al Aula Virtual y Campus Digital",
+    "keywords": [
+      "no puedo entrar al aula",
+      "no puedo ingresar al campus",
+      "olvide mi contrasena",
+      "olvide mi clave",
+      "recuperar contrasena",
+      "error al iniciar sesion",
+      "usuario bloqueado",
+      "plataforma no carga",
+      "no carga el aula virtual",
+      "problema con la contrasena",
+      "no puedo acceder a la plataforma"
+    ],
+    "patterns": [
+      "no puedo.*(entrar|ingresar|acceder).*(aula|campus|plataforma)",
+      "olvid[eé].*(clave|contrase[nñ]a)",
+      "recuperar.*(clave|contrase[nñ]a)",
+      "(aula|campus|plataforma).*no carga"
+    ],
+    "response": "💻 **Guía de Acceso y Solución de Problemas en el Aula Virtual:**\n\n1. **Credenciales predeterminadas:** Recuerda que tu usuario institucional es tu correo electrónico registrado y la contraseña inicial corresponde a tu número de documento de identidad sin puntos ni comas.\n2. **Recuperación de contraseña:** Haz clic en el enlace *'¿Olvidaste tu contraseña?'* en la pantalla de inicio del campus. Recibirás un enlace seguro de restablecimiento en tu bandeja de entrada o carpeta de spam.\n3. **Navegador y Caché:** Recomendamos usar Google Chrome o Mozilla Firefox actualizados. Si la página se queda en blanco, abre una ventana de incógnito o borra los archivos temporales de tu navegador (`Ctrl + Shift + R`).\n4. **Soporte Técnico:** Si tu cuenta aparece con estado *'Bloqueada temporalmente'*, nuestro equipo de soporte restablece accesos en soporte@academiaidiomas.edu.co o a través de un asesor académico en vivo."
+  },
+  {
+    "id": "certificados_y_constancias",
+    "title": "Solicitud y Trámite de Certificados de Estudio",
+    "keywords": [
+      "solicitar certificado",
+      "constancia de estudio",
+      "certificado de estudio",
+      "certificado de notas",
+      "como pido el certificado",
+      "descargar certificado",
+      "certificado de finalizacion",
+      "certificado laboral de estudio"
+    ],
+    "patterns": [
+      "solicitar.*(certificado|constancia)",
+      "(c[oó]mo|d[oó]nde).*(pido|obtengo|descargo).*(certificado|constancia)",
+      "constancia.*estudio"
+    ],
+    "response": "📜 **Trámite de Certificados Académicos y Constancias de Estudio:**\n\n1. **Requisitos de expedición:** Para certificar la aprobación de un nivel o módulo, debes contar con una asistencia mínima del 80% y una calificación final igual o superior a 3.8/5.0.\n2. **Constancias de matrícula activa:** Si necesitas un certificado para tu empresa, caja de compensación o universidad, puedes descargarlo de forma gratuita directamente desde el portal estudiantil en la sección *'Mis Trámites' -> 'Certificados'*\n3. **Tiempos de entrega:** Las certificaciones oficiales con firma de Secretaría Académica y código QR de verificación toman hasta **3 días hábiles** tras su solicitud.\n4. **Costo de duplicados físicos:** La versión digital en PDF es 100% gratuita; si requieres copia física autenticada en papel membretado tiene un costo administrativo de $25.000 COP."
+  },
+  {
+    "id": "examen_clasificacion",
+    "title": "Examen de Nivelación y Clasificación (Placement Test)",
+    "keywords": [
+      "examen de nivelacion",
+      "test de clasificacion",
+      "examen de clasificacion",
+      "placement test",
+      "saber en que nivel estoy",
+      "prueba de diagnostico",
+      "como se en que nivel empezar",
+      "presentar examen de nivelacion"
+    ],
+    "patterns": [
+      "(examen|test|prueba).*(nivelaci[oó]n|clasificaci[oó]n|diagn[oó]stico|placement)",
+      "saber.*(nivel|empezar)"
+    ],
+    "response": "🎯 **Examen de Clasificación y Nivelación (Placement Test):**\n\n1. **¿En qué consiste?:** Es una prueba diagnóstica computarizada de 45 minutos que evalúa comprensión auditiva, lectura, gramática y una breve entrevista oral con un docente.\n2. **Costo:** El examen es **100% gratuito** si te matriculas en cualquiera de nuestros programas regulares.\n3. **Modalidad:** Puedes presentarlo virtualmente desde tu casa con cámara web activa o presencialmente en nuestra sede principal de lunes a viernes (08:00 a 17:00 COT).\n4. **Resultados inmediatos:** Al finalizar, el sistema emite tu nivel exacto según el Marco Común Europeo (A1, A2, B1, B2, C1) para ubicarte en el grupo adecuado."
+  },
+  {
+    "id": "cambios_horario_inasistencias",
+    "title": "Cambios de Horario, Inasistencias y Reposiciones",
+    "keywords": [
+      "cambio de horario",
+      "cambiar de grupo",
+      "cambiarme de franja",
+      "no puedo asistir",
+      "falte a clase",
+      "reponer clase",
+      "justificar inasistencia",
+      "incapacidad medica"
+    ],
+    "patterns": [
+      "cambi(ar|o).*(horario|grupo|franja|jornada)",
+      "(reponer|justificar).*(clase|inasistencia|falta)",
+      "no puedo asistir"
+    ],
+    "response": "⏰ **Políticas de Cambio de Horario, Asistencia y Reposición de Clases:**\n\n1. **Cambio de franja horaria:** Puedes solicitar cambio de grupo (mañana, tarde o noche) durante los primeros 3 días hábiles de iniciado el ciclo, sujeto a disponibilidad de cupos en el nuevo horario.\n2. **Límite de inasistencias:** Para aprobar y certificar el módulo se requiere un mínimo del 80% de asistencia presencial o virtual sincrónica.\n3. **Justificación médica:** Presenta tu incapacidad médica o constancia laboral dentro de los 5 días siguientes a la inasistencia mediante el portal del estudiante para no afectar tu porcentaje de asistencia.\n4. **Grabaciones y Reposición:** Todas las clases virtuales sincrónicas quedan grabadas en el aula virtual durante 30 días para tu consulta autónoma."
+  },
+  {
+    "id": "congelaciones_y_retiros",
+    "title": "Políticas de Congelación de Curso y Retiros",
+    "keywords": [
+      "congelar el curso",
+      "congelar matricula",
+      "congelar semestre",
+      "solicitar retiro",
+      "cancelar curso",
+      "devolucion de dinero",
+      "reembolso de matricula"
+    ],
+    "patterns": [
+      "congelar.*(curso|matr[ií]cula|semestre|nivel)",
+      "(devoluci[oó]n|reembolso).*(dinero|matr[ií]cula)",
+      "(cancelar|retirarme).*(curso|matr[ií]cula)"
+    ],
+    "response": "⏸️ **Políticas Oficiales de Congelación y Retiros:**\n\n1. **Condiciones de congelación:** Tienes derecho a congelar tu curso por un plazo máximo de hasta **60 días calendario**, solicitándolo por escrito con al menos 5 días hábiles de anticipación al inicio del nuevo módulo.\n2. **Retiro antes de inicio de clases:** Si solicitas el retiro con más de 8 días hábiles antes de la fecha de inicio, se reembolsa el 85% del valor de la matrícula (15% corresponde a gastos administrativos).\n3. **Cursos ya iniciados:** Una vez iniciadas las clases no se realizan reembolsos económicos, pero el saldo no utilizado puede congelarse o transferirse a un familiar directo.\n4. **Fuerza mayor:** Casos excepcionales por traslado de ciudad o motivos de salud graves comprobados deben radicarse ante Dirección Académica con soportes."
+  },
+  {
+    "id": "materiales_y_libros",
+    "title": "Materiales de Estudio, Libros y Plataformas Digitales",
+    "keywords": [
+      "donde compro el libro",
+      "codigo de acceso del libro",
+      "codigo de la plataforma",
+      "libro digital no abre",
+      "licencia expirada",
+      "comprar material de estudio",
+      "libro de ingles",
+      "material didactico"
+    ],
+    "patterns": [
+      "(d[oó]nde|c[oó]mo).*(compro|comprar|adquirir).*(libro|material)",
+      "c[oó]digo.*(acceso|libro|plataforma|licencia)",
+      "licencia.*expirada"
+    ],
+    "response": "📚 **Materiales Didácticos y Licencias Digitales:**\n\n1. **Adquisición oficial:** Los libros oficiales (Cambridge University Press, National Geographic Learning, Hueber) pueden adquirirse directamente en la librería de la sede principal o a través de nuestra tienda virtual con envío nacional.\n2. **Códigos de acceso digital:** Cada libro físico original incluye un código rascable en la contraportada para activar la plataforma de práctica y workbook digital por 12 meses.\n3. **Códigos defectuosos:** Si tu código aparece como 'ya utilizado' o ilegible, presenta tu factura de compra original en la librería o escríbenos a materiales@academiaidiomas.edu.co para solicitar el reemplazo directo con la editorial."
+  },
+  {
+    "id": "examenes_internacionales",
+    "title": "Cursos de Preparación para Exámenes Internacionales",
+    "keywords": [
+      "preparacion ielts",
+      "preparacion toefl",
+      "preparacion cambridge",
+      "curso ielts",
+      "curso toefl",
+      "examen oficial ielts",
+      "fechas de examenes internacionales"
+    ],
+    "patterns": [
+      "preparaci[oó]n.*(ielts|toefl|cambridge|delf|goethe)",
+      "curso.*(ielts|toefl|cambridge|delf|goethe)"
+    ],
+    "response": "🌍 **Preparación para Exámenes Internacionales (IELTS, TOEFL, Cambridge, DELF, Goethe):**\n\n1. **Programa preparatorio:** Módulo intensivo de 40 horas académicas enfocado en técnicas de examen, simulación de pruebas computarizadas y estrategias de puntuación.\n2. **Inversión:** $780.000 COP por módulo (incluye acceso a simuladores con retroalimentación y bancos de preguntas de exámenes reales).\n3. **Requisito de nivel:** Para ingresar al curso preparatorio se requiere un nivel de dominio mínimo de B1/B2 certificado o validado en nuestro placement test.\n4. **Aplicación del examen oficial:** La Academia es centro de preparación autorizado; la presentación de la prueba oficial se realiza en los centros examinadores autorizados de cada franquicia (British Council, ETS, Alianza Francesa, Goethe-Institut)."
+  }
+]
