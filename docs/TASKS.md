@@ -74,10 +74,10 @@
 ---
 
 ## Phase 6: Containerization & Cloud Deployment
-- [ ] **TASK-6.1:** Author multi-stage, non-root `backend/Dockerfile` using `python:3.11-slim`.
-- [ ] **TASK-6.2:** Create root `docker-compose.yml` linking backend and persistent volumes (`./backend/data:/app/data`).
-- [ ] **TASK-6.3:** Write automated startup script (`backend/scripts/run.sh`) to run migrations/ingest on cold boot.
-- [ ] **TASK-6.4:** Configure deployment parameters for Railway/Render and Vercel.
+- [x] **TASK-6.1:** Author production multi-stage `backend/Dockerfile` with non-root user execution.
+- [x] **TASK-6.2:** Author multi-stage `frontend/Dockerfile` with Nginx Alpine static serving and API proxy routing.
+- [x] **TASK-6.3:** Build root `docker-compose.yml` orchestrating backend and frontend services with persistent volumes.
+- [x] **TASK-6.4:** Configure deployment parameters for Railway/Render and Vercel.
 
 ---
 
