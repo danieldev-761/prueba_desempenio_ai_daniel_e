@@ -57,9 +57,9 @@
 ---
 
 ## Phase 5: Frontend Development (React + Vite + Tailwind CSS)
-- [ ] **TASK-5.1:** Initialize frontend application with Vite (`React`, JavaScript/TypeScript, Tailwind CSS, Lucide icons).
-- [ ] **TASK-5.2:** Build API client service (`frontend/src/services/api.js`) consuming backend endpoints with error handling.
-- [ ] **TASK-5.3:** Create UI layout and modular components:
+- [x] **TASK-5.1:** Initialize frontend application with Vite (`React`, JavaScript/TypeScript, Tailwind CSS, Lucide icons).
+- [x] **TASK-5.2:** Build API client service (`frontend/src/services/api.js`) consuming backend endpoints with error handling.
+- [x] **TASK-5.3:** Create UI layout and modular components:
   - `Navbar.jsx`: Academy branding, status indicators, Telegram link, and Staff portal button.
   - `ChatContainer.jsx`: Scrollable message stream with responsive typing indicator.
   - `MessageBubble.jsx`: Distinct styles for Student, Assistant, and Escalated Human Handover state (highlighting sources and confidence badges).
@@ -68,8 +68,8 @@
   - `InquiryForm.jsx`: Structured contact form processing inquiries via webhook channel.
   - `EscalationModal.jsx`: Student identification modal generating `[Name]_[ID4Digits]` session IDs.
   - `LiveAdvisorChat.jsx`: Real-time floating live advisor chat window.
-- [ ] **TASK-5.4:** Implement session persistence in browser storage (`sessionStorage`) for conversational continuity.
-- [ ] **TASK-5.5:** Configure production build and Vercel configuration (`frontend/vercel.json`).
+- [x] **TASK-5.4:** Implement session persistence in browser storage (`sessionStorage`) for conversational continuity.
+- [x] **TASK-5.5:** Configure production build and Vercel configuration (`frontend/vercel.json`).
 
 ---
 
