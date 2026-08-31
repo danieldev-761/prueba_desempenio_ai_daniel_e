@@ -10,7 +10,8 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - ADMIN_API_KEY=${ADMIN_API_KEY:-admin_secret_pin_2026}
       - CHROMA_PERSIST_DIR=/app/data/chroma_db

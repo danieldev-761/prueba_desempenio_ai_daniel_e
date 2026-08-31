@@ -17,9 +17,14 @@ def get_chat_model(
     selected_provider = (provider or settings.LLM_PROVIDER).lower()
 
     if selected_provider == "gemini":
-        api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", "")
+        api_key = (
+            settings.GEMINI_API_KEY
+            or settings.GOOGLE_API_KEY
+            or os.getenv("GEMINI_API_KEY", "")
+            or os.getenv("GOOGLE_API_KEY", "")
+        )
         if not api_key:
-            logger.warning("GEMINI_API_KEY is not set. Gemini chat model may fail if invoked without key.")
+            logger.warning("GEMINI_API_KEY / GOOGLE_API_KEY is not set. Gemini chat model may fail if invoked without key.")
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
             return ChatGoogleGenerativeAI(
@@ -57,9 +62,14 @@ def get_embeddings_model(
     selected_provider = (provider or settings.LLM_PROVIDER).lower()
 
     if selected_provider == "gemini":
-        api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", "")
+        api_key = (
+            settings.GEMINI_API_KEY
+            or settings.GOOGLE_API_KEY
+            or os.getenv("GEMINI_API_KEY", "")
+            or os.getenv("GOOGLE_API_KEY", "")
+        )
         if not api_key:
-            logger.warning("GEMINI_API_KEY is not set. Gemini embeddings may fail if invoked without key.")
+            logger.warning("GEMINI_API_KEY / GOOGLE_API_KEY is not set. Gemini embeddings may fail if invoked without key.")
         try:
             from langchain_google_genai import GoogleGenerativeAIEmbeddings
             return GoogleGenerativeAIEmbeddings(

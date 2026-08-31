@@ -105,3 +105,65 @@ Accepted.
 ### Consequences
 * **Pros:** Closes the automation loop with human-in-the-loop capabilities, satisfying both autonomous and manual customer service requirements.
 * **Cons:** Requires state management for active WebSocket connections.
+
+---
+
+## ADR-007: Adoption of pnpm v12 as Primary Frontend Package Manager
+
+### Context
+The frontend previously used standard npm. Modern enterprise engineering and reproducible delivery standards require ultra-fast, content-addressable storage, strict supply-chain security checks (`pnpm approve-builds`), and deterministic dependency locking without phantom dependencies.
+
+### Decision
+Migrate the frontend workspace to **pnpm v12** (`pnpm@12.1.0`):
+1. Configure `packageManager: "pnpm@12.1.0"` in `frontend/package.json`.
+2. Generate and maintain `frontend/pnpm-lock.yaml`.
+3. Update `frontend/Dockerfile` to install and build using `pnpm@12` (`pnpm install --frozen-lockfile`).
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Hard-linked content-addressable storage significantly decreases disk usage and CI installation times; strict supply chain protection prevents unexpected postinstall script execution; build times consistently clocked at under 2 seconds.
+* **Cons:** Developers must have pnpm v12 installed locally (`npm install -g pnpm@12`).
+
+---
+
+## ADR-008: Google Gemini as Primary Default LLM and Embeddings Provider
+
+### Context
+The system was engineered with an agnostic LLM Factory (`llm_factory.py`) supporting both OpenAI and Google Gemini. To optimize operating costs, take advantage of generous free-tier API quotas, and provide rapid inference times, an official primary default needed to be designated.
+
+### Decision
+Designate **Google Gemini** as the primary default LLM and Embeddings provider:
+1. Configure `LLM_PROVIDER: str = "gemini"` as default in `backend/app/core/config.py`.
+2. Primary chat model: `gemini-2.5-flash` / `gemini-1.5-flash`.
+3. Primary embeddings model: `models/text-embedding-004` (768 dimensions).
+4. Update `docker-compose.yml`, `backend/.env.example`, and documentation to default to Gemini. OpenAI remains fully functional as a secondary drop-in fallback.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Extremely low API cost ($0.075/1M input tokens), high tokens-per-minute throughput on Gemini Flash, and native compatibility with Google AI Studio free API keys.
+* **Cons:** Vector database embeddings collection is tied to the selected provider (switching to OpenAI requires re-running `ingest.py` due to dimensionality differences: 768 for Gemini vs. 1536 for OpenAI).
+
+---
+
+## ADR-009: Cloud Deployment Strategy on Railway Container Infrastructure
+
+### Context
+The user selected **Railway** as the primary cloud hosting platform to leverage its container-native architecture (`Dockerfile`), free tier/starter credits, and zero-configuration SSL.
+
+### Decision
+Standardize cloud deployment on **Railway**:
+1. Create `backend/railway.toml` specifying Dockerfile builder, start command (`/bin/bash /app/scripts/run.sh`), healthcheck path (`/health`), and failure restart policy.
+2. Create `frontend/railway.toml` configuring Nginx Alpine container serving with automated `/` health checks.
+3. Attach persistent volume `/app/data` to the backend service to safeguard `academy.db` and ChromaDB embeddings.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Native container execution directly from Dockerfiles, automatic continuous deployment on git push, automatic HTTPS domain provisioning, persistent volume support for SQLite and ChromaDB, and compliance with free/trial quotas.
+* **Cons:** Ephemeral free-tier hours require monitoring usage to avoid interruption.
+

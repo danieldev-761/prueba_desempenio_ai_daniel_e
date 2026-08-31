@@ -13,17 +13,18 @@ class Settings(BaseSettings):
     PORT: int = 8000
     HOST: str = "0.0.0.0"
 
-    # LLM Provider Configuration
-    LLM_PROVIDER: str = Field(default="openai", description="LLM provider: 'openai' or 'gemini'")
+    # LLM Provider Configuration (Gemini is Primary Default)
+    LLM_PROVIDER: str = Field(default="gemini", description="Primary LLM provider: 'gemini' or 'openai'")
 
     # OpenAI Settings
     OPENAI_API_KEY: str = Field(default="", description="OpenAI API Secret Key")
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
 
-    # Gemini Settings
+    # Google Gemini Settings (Primary Provider)
+    GOOGLE_API_KEY: str = Field(default="", description="Google API Key alias")
     GEMINI_API_KEY: str = Field(default="", description="Google Gemini API Key")
-    GEMINI_CHAT_MODEL: str = "gemini-3.1-flash-lite"
+    GEMINI_CHAT_MODEL: str = "gemini-2.5-flash"
     GEMINI_EMBEDDING_MODEL: str = "models/text-embedding-004"
 
     # Vector Database & Caching

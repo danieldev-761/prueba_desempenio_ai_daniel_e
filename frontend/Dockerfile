@@ -4,11 +4,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install pnpm v12
+RUN npm install -g pnpm@12
+
 # Copy dependency manifests
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 # Copy source files and configs
 COPY index.html vite.config.js tailwind.config.js postcss.config.js ./
@@ -16,7 +19,7 @@ COPY src ./src
 COPY public ./public 2>/dev/null || true
 
 # Build production bundle
-RUN npm run build
+RUN pnpm run build
 
 # ----------------------------------------------------------------------
 # Runtime Stage: High-Performance Nginx Alpine

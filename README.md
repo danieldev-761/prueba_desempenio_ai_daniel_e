@@ -141,11 +141,12 @@ If running Telegram locally without webhooks or public tunneling:
 python backend/scripts/telegram_worker.py
 ```
 
-### 5. Frontend Setup
+### 5. Frontend Setup (pnpm v12)
 ```bash
+# Install pnpm v12 globally if needed: npm install -g pnpm@12
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 Open `http://localhost:5173` to interact with the web assistant.
 
@@ -160,6 +161,29 @@ docker compose up --build -d
 * **Frontend Web Application:** `http://localhost:3000`
 * **Backend REST API:** `http://localhost:8000/api/v1/docs`
 * **Healthcheck:** `http://localhost:8000/health`
+
+---
+
+## 🚂 Railway Cloud Deployment (Container Free/Starter Tier)
+
+This repository is optimized for deployment on **Railway** using OCI containers without cloud vendor lock-in.
+
+### 1. Deploying the Backend Service
+1. Connect your repository to **Railway** (or use `railway init`).
+2. Add a service from repo root pointing to directory `/backend` (Railway auto-detects [backend/railway.toml](file:///home/Coder/Documentos/DanielE/prueba_desempenio_ai_daniel_e/backend/railway.toml) and [backend/Dockerfile](file:///home/Coder/Documentos/DanielE/prueba_desempenio_ai_daniel_e/backend/Dockerfile)).
+3. Configure Environment Variables in the Railway Dashboard:
+   * `LLM_PROVIDER`: `gemini`
+   * `GEMINI_API_KEY`: Your Google AI Studio API key
+   * `ADMIN_API_KEY`: A strong administrative key
+   * `TELEGRAM_BOT_TOKEN`: (Optional) Telegram bot token
+4. Mount a Persistent Volume on path `/app/data` to persist `academy.db` and `chroma_db`.
+5. Generate a public Railway domain (e.g. `https://academy-backend.up.railway.app`).
+
+### 2. Deploying the Frontend Service
+1. Add a second service from repo root pointing to directory `/frontend` (uses [frontend/railway.toml](file:///home/Coder/Documentos/DanielE/prueba_desempenio_ai_daniel_e/frontend/railway.toml) and [frontend/Dockerfile](file:///home/Coder/Documentos/DanielE/prueba_desempenio_ai_daniel_e/frontend/Dockerfile)).
+2. Set Environment Variable:
+   * `VITE_API_URL`: Your deployed backend API URL (e.g. `https://academy-backend.up.railway.app/api/v1`).
+3. Generate a public domain to access the web application.
 
 ---
 
