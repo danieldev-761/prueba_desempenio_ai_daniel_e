@@ -7,7 +7,7 @@
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v3-38B2AC.svg?style=flat&logo=tailwind_css&logoColor=white)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat)](LICENSE)
 
-An enterprise-grade, zero-hallucination **Colombian Language Academy Intelligent Customer Service Assistant** powered by **FastAPI**, **LangGraph**, **ChromaDB**, and **SQLite**. Designed to automate repetitive customer service inquiries for a Colombian language academy across multiple channels (**Telegram Bot**, **Web Single-Page App**, and **HTTP Contact Form Webhook**), resolving questions regarding schedules, pricing, levels (CEFR), enrollment, certifications, and study modalities while guaranteeing strict grounding, sub-second semantic caching, real-time WebSocket human escalation, and operational telemetry.
+An enterprise-grade, zero-hallucination **Colombian Language Academy Intelligent Customer Service Assistant** powered by **FastAPI**, **LangGraph**, **ChromaDB**, and **SQLite**. Built to resolve the repetitive customer inquiries that saturate a Colombian language academy across three channels (**Web Chat SPA**, **Telegram Bot**, and **HTTP Contact Form Webhook**). The assistant resolves inquiries regarding course schedules, pricing in COP, CEFR levels, registration, international certifications, and modalities while guaranteeing strict document grounding, sub-second semantic caching, real-time WebSocket human escalation, and operational telemetry.
 
 ---
 
@@ -17,16 +17,16 @@ An enterprise-grade, zero-hallucination **Colombian Language Academy Intelligent
 graph TD
     subgraph "Client Intake Layer (Multi-Channel)"
         WebClient["Web UI (React + Tailwind)"] -->|"POST /api/v1/chat"| FastAPIGateway
-        TelegramClient["Telegram App (@AcademiaIdiomas_bot)"] -->|"Long-Polling / Webhook"| TelegramWorker["Telegram Service Worker"]
+        TelegramClient["Telegram App (@AcademiaIdiomasCol_bot)"] -->|"Long-Polling / Webhook"| TelegramWorker["Telegram Service Worker"]
         TelegramWorker --> FastAPIGateway["FastAPI Gateway (/api/v1)"]
         WebhookClient["Student Contact Webhook Form"] -->|"POST /api/v1/chat (channel=webhook)"| FastAPIGateway
     end
 
     subgraph "Orchestration & Decision Layer (LangGraph StateGraph)"
         FastAPIGateway --> CheckCache["1. Check Semantic Cache"]
-        CheckCache -->|"Hit (Cosine Sim >= 0.92)"| ReturnCache["Instant Cache Return (<300ms, $0)"]
+        CheckCache -->|"Hit (Cosine Sim >= 0.82)"| ReturnCache["Instant Cache Return (<300ms, $0)"]
         CheckCache -->|"Miss"| Retrieve["2. Retrieve Document Chunks"]
-        Retrieve --> RelevanceGate{"3. Relevance Score Gate (>= 0.70)"}
+        Retrieve --> RelevanceGate{"3. Relevance Score Gate (>= 0.45)"}
         RelevanceGate -->|"Fail (Out of Scope)"| Escalate["4. Escalate to Human Academic Advisor"]
         RelevanceGate -->|"Pass"| Generate["5. Grounded Answer Generation (OpenAI / Gemini)"]
         Generate --> GroundingGate{"6. Zero-Hallucination Gate (No [[ESCALATE]])"}
@@ -35,14 +35,14 @@ graph TD
     end
 
     subgraph "Live Human Escalation & Staff Workspace"
-        Escalate --> LiveChatWS["WebSocket /api/v1/ws/chat/{session_id}"]
+        Escalate --> LiveChatWS["WebSocket /api/v1/escalation/ws/chat/{session_id}"]
         LiveChatWS <--> AdminPortal["Staff Workspace & Live Chat"]
     end
 
     subgraph "Persistent Storage Layer"
         Retrieve --> ChromaDB[("ChromaDB Vector Store (academy_docs)")]
         Finalize --> ChromaCache[("ChromaDB Semantic Cache (semantic_cache)")]
-        FastAPIGateway --> SQLite[("SQLite DB (telemetry_logs, escalated_sessions, student_profiles)")]
+        FastAPIGateway --> SQLite[("SQLite DB (academy.db)")]
     end
 ```
 
@@ -51,20 +51,21 @@ graph TD
 ## ✨ Key Capabilities
 
 1. **Zero-Hallucination Guardrails & Grounded Answers**:
-   - Strict citation requirements referencing official academy business documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`).
-   - If an inquiry is out-of-scope or unverified, the LLM emits an `[[ESCALATE]]` token, routing the student to the Academic Advisory Team.
+   - Strict citation referencing the 3 official academy documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`).
+   - Closed-World Assumption: when an inquiry is out of scope or unverified, the LLM emits `[[ESCALATE]]`, immediately transferring the student to a human advisor.
 2. **Sub-Second Semantic Caching**:
-   - Persists query-response embeddings into a dedicated ChromaDB collection.
+   - Persists query-response embeddings into a dedicated ChromaDB collection with cosine distance threshold.
    - Paraphrased and repeated inquiries are resolved in `<300ms` with **$0 USD LLM token cost**.
-3. **Multi-Channel Support**:
-   - **Web Chat UI**: Interactive chat interface with quick action chips and source citation drawer.
-   - **Telegram Bot**: Long-polling worker or webhook mode for Telegram users.
-   - **HTTP Contact Form Webhook**: Directly ingest website contact queries.
-4. **Human-in-the-Loop Escalation**:
-   - Real-time escalation protocol generating deterministic session IDs (`[Name]_[Last4Digits]`).
-   - Bi-directional WebSockets for live chat handover between student and advisor.
+3. **Multi-Channel Experience**:
+   - **Web Chat SPA**: Interactive chat with suggestion chips, citations accordion, and real-time live advisor chat.
+   - **Telegram Bot**: Operates in standalone long-polling mode (`scripts/telegram_worker.py`) or webhook mode.
+   - **Contact Form**: Submits inquiries through the webhook pipeline.
+4. **Human-in-the-Loop Escalation & CRM**:
+   - Generates deterministic session IDs (`[FirstName]_[Last4Digits]`).
+   - Bi-directional WebSockets for live chat between students and staff.
+   - Post-session student satisfaction feedback with 1-to-5 star ratings.
 5. **Operational Telemetry & Metrics**:
-   - Protected `/api/v1/metrics` endpoint providing total query counts, cache hit ratios, escalation rates, token usage, and latency metrics.
+   - Protected `/api/v1/metrics` endpoint providing query counts, cache hit ratios, escalation rates, token usage, and latency.
 
 ---
 
@@ -74,29 +75,31 @@ graph TD
 .
 ├── backend/
 │   ├── app/
-│   │   ├── api/             # FastAPI routers (chat, telegram, metrics, escalations, ws)
-│   │   ├── core/            # Configuration (BaseSettings), prompt templates
-│   │   ├── db/              # Async SQLAlchemy engine and session factory
-│   │   ├── models/          # Relational entities (telemetry, escalations, students)
+│   │   ├── api/             # FastAPI routers (chat, telegram, metrics, escalation, health)
+│   │   ├── core/            # Config, logging, zero-hallucination prompts
+│   │   ├── db/              # Async SQLAlchemy engine (academy.db)
+│   │   ├── models/          # Relational entities (telemetry, student CRM, escalations)
 │   │   ├── schemas/         # Pydantic v2 DTOs
-│   │   └── services/        # LangGraph workflow, vector store, cache, LLM factory
+│   │   └── services/        # LangGraph workflow, vector store, semantic cache, LLM factory
 │   ├── data/
-│   │   ├── raw/             # Official business markdown documents
-│   │   └── chroma_db/       # ChromaDB persistent vector database
-│   ├── scripts/             # Data generator, ingestion, and startup scripts
-│   ├── tests/               # Unit, integration, and API test suites
-│   ├── Dockerfile           # Multi-stage production container
+│   │   ├── raw/             # Official Spanish business markdown documents
+│   │   └── chroma_db/       # Persistent ChromaDB vector database
+│   ├── scripts/             # Data generator, ingestion, and Telegram worker
+│   ├── tests/               # Unit and integration test suites with offline mock embeddings
+│   ├── Dockerfile           # Multi-stage production container (non-root)
 │   └── requirements.txt     # Python dependencies
 ├── frontend/
 │   ├── src/
-│   │   ├── components/      # React UI components (Chat, Form, LiveAdvisor, Metrics)
-│   │   ├── services/        # Axios API client
-│   │   └── App.jsx
+│   │   ├── components/      # React components in Spanish (Chat, Form, LiveAdvisor, AdminPortal)
+│   │   ├── services/        # API client service
+│   │   └── App.jsx          # Main application entrypoint
+│   ├── nginx.conf           # Nginx reverse proxy with WebSocket support
+│   ├── Dockerfile           # Multi-stage container with Nginx Alpine
 │   ├── package.json
 │   └── vite.config.js
-├── docs/                    # Architecture, API, Database, Rules, and ADR specs
+├── docs/                    # Architecture, API, Database, Rules, and ADR specs (in English)
 ├── documentation/           # Daily changelogs and phase technical documentation
-├── docker-compose.yml       # Container orchestration specification
+├── docker-compose.yml       # Multi-container orchestration specification
 └── README.md
 ```
 
@@ -105,8 +108,8 @@ graph TD
 ## 🚀 Quick Start (Local Setup)
 
 ### 1. Prerequisites
-* Python 3.11+ (or `uv`)
-* Node.js 18+ and `pnpm`
+* Python 3.11+
+* Node.js 18+ and `npm`
 * Git
 
 ### 2. Environment Configuration
@@ -119,7 +122,7 @@ cp frontend/.env.example frontend/.env
 ### 3. Backend Setup
 ```bash
 cd backend
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate  # Or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
 
@@ -130,12 +133,19 @@ python scripts/ingest.py
 # Launch FastAPI development server
 uvicorn app.main:app --reload --port 8000
 ```
+API Documentation will be available at `http://localhost:8000/api/v1/docs`.
 
-### 4. Frontend Setup
+### 4. Standalone Telegram Bot Worker (Optional)
+If running Telegram locally without webhooks or public tunneling:
 ```bash
-cd ../frontend
-pnpm install
-pnpm dev
+python backend/scripts/telegram_worker.py
+```
+
+### 5. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 Open `http://localhost:5173` to interact with the web assistant.
 
@@ -143,16 +153,25 @@ Open `http://localhost:5173` to interact with the web assistant.
 
 ## 🐳 Docker Deployment
 
+To launch the entire stack in isolated production containers:
 ```bash
-docker-compose up --build
+docker compose up --build -d
 ```
-The application will automatically initialize the vector store, load the business knowledge base, and start the FastAPI gateway on port `8000`.
+* **Frontend Web Application:** `http://localhost:3000`
+* **Backend REST API:** `http://localhost:8000/api/v1/docs`
+* **Healthcheck:** `http://localhost:8000/health`
 
 ---
 
 ## 🧪 Running Automated Tests
 
+The test suite includes offline deterministic mock embeddings (`DeterministicMockEmbeddings`), requiring no live API keys to execute:
 ```bash
 cd backend
 pytest tests/ -v
+```
+To run unit and integration suites separately:
+```bash
+pytest tests/unit/ -v
+pytest tests/integration/ -v
 ```
