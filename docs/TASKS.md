@@ -18,10 +18,10 @@
 ---
 
 ## Phase 2: Vector Store, Ingestion & Semantic Cache Pipeline
-- [ ] **TASK-2.1:** Implement LLM & Embeddings Provider Factory (`backend/app/services/llm_factory.py`) supporting dynamic switching between OpenAI (`gpt-4o-mini` + `text-embedding-3-small`) and Gemini (`gemini-3.1-flash-lite` + `text-embedding-004`).
-- [ ] **TASK-2.2:** Build vector store manager (`backend/app/services/vector_store.py`) encapsulating ChromaDB `PersistentClient` for the `academy_docs` collection.
-- [ ] **TASK-2.3:** Write idempotent data ingestion script (`backend/scripts/ingest.py`) parsing raw markdown documents with `RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)` and attaching structured metadata (`source_file`, `section`, `chunk_id`).
-- [ ] **TASK-2.4:** Build Semantic Cache service (`backend/app/services/cache_service.py`) using ChromaDB `semantic_cache` collection with cosine distance threshold $\le 0.08$ ($\ge 92\%$ similarity) for $0-cost immediate query hits.
+- [x] **TASK-2.1:** Implement LLM & Embeddings Provider Factory (`backend/app/services/llm_factory.py`) supporting dynamic switching between OpenAI (`gpt-4o-mini` + `text-embedding-3-small`) and Gemini (`gemini-3.1-flash-lite` + `text-embedding-004`).
+- [x] **TASK-2.2:** Build vector store manager (`backend/app/services/vector_store.py`) encapsulating ChromaDB `PersistentClient` for the `academy_docs` collection.
+- [x] **TASK-2.3:** Write idempotent data ingestion script (`backend/scripts/ingest.py`) parsing raw markdown documents with `RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)` and attaching structured metadata (`source_file`, `section`, `chunk_id`).
+- [x] **TASK-2.4:** Build Semantic Cache service (`backend/app/services/cache_service.py`) using ChromaDB `semantic_cache` collection with cosine distance threshold $\le 0.08$ ($\ge 92\%$ similarity) for $0-cost immediate query hits.
 
 ---
 
