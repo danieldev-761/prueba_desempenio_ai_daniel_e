@@ -1,6 +1,12 @@
+import os
 import re
+import sys
 from pathlib import Path
 from typing import List, Dict, Any
+
+# Ensure backend root directory is in sys.path for direct script execution
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.core.logging import logger
