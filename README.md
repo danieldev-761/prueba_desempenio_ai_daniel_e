@@ -23,8 +23,10 @@ graph TD
     end
 
     subgraph "Orchestration & Decision Layer (LangGraph StateGraph)"
-        FastAPIGateway --> CheckCache["1. Check Semantic Cache"]
-        CheckCache -->|"Hit (Cosine Sim >= 0.82)"| ReturnCache["Instant Cache Return (<300ms, $0)"]
+        FastAPIGateway --> Triage["0. Deterministic FAQ Triage (<5ms, $0 Tokens)"]
+        Triage -->|"Match (8 Categories)"| ReturnTriage["Instant Self-Help Checklist (0 Tokens)"]
+        Triage -->|"No Match"| CheckCache["1. Check Semantic Cache"]
+        CheckCache -->|"Hit (Cosine Sim >= 0.82)"| ReturnCache["Instant Cache Return (<30ms, $0)"]
         CheckCache -->|"Miss"| Retrieve["2. Retrieve Document Chunks"]
         Retrieve --> RelevanceGate{"3. Relevance Score Gate (>= 0.45)"}
         RelevanceGate -->|"Fail (Out of Scope)"| Escalate["4. Escalate to Human Academic Advisor"]
@@ -40,6 +42,7 @@ graph TD
     end
 
     subgraph "Persistent Storage Layer"
+        Triage -.-> FAQJson[("Frequent Issues Catalog (frequent_issues.json)")]
         Retrieve --> ChromaDB[("ChromaDB Vector Store (academy_docs)")]
         Finalize --> ChromaCache[("ChromaDB Semantic Cache (semantic_cache)")]
         FastAPIGateway --> SQLite[("SQLite DB (academy.db)")]
@@ -50,22 +53,26 @@ graph TD
 
 ## ✨ Key Capabilities
 
-1. **Zero-Hallucination Guardrails & Grounded Answers**:
+1. **Zero-Token Deterministic Triage Engine (ADR-012)**:
+   - Evaluates inquiries against a pre-compiled JSON catalog (`frequent_issues.json`) covering 8 critical operational categories (payments, campus virtual access, study certificates, placement tests, schedule shifts, course freezes, textbook activation codes, and international exam prep).
+   - Returns structured self-help diagnostic checklists in **$< 5\text{ ms}$** consuming **$0\text{ tokens}$** at **$\$0.0\text{ USD}$ cost**, eliminating LLM API consumption for predictable operational requests.
+2. **Zero-Hallucination Guardrails & Closed-Catalog Negation (ADR-011)**:
    - Strict citation referencing the 3 official academy documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`).
-   - Closed-World Assumption: when an inquiry is out of scope or unverified, the LLM emits `[[ESCALATE]]`, immediately transferring the student to a human advisor.
-2. **Sub-Second Semantic Caching**:
-   - Persists query-response embeddings into a dedicated ChromaDB collection with cosine distance threshold.
-   - Paraphrased and repeated inquiries are resolved in `<300ms` with **$0 USD LLM token cost**.
-3. **Multi-Channel Experience**:
+   - Closed-Catalog Reasoning: questions about unoffered languages (e.g. Russian, Japanese) or payment methods are authoritatively confirmed as unavailable and redirected to the 5 official languages without false human escalations.
+   - Closed-World Assumption: when an inquiry is genuinely out of scope or requires administrative exceptions, the assistant emits `[[ESCALATE]]`, transferring the student to a human advisor.
+3. **Sub-Second Semantic Caching**:
+   - Persists query-response embeddings into a dedicated ChromaDB collection using normalized cosine distance metric (`hnsw:space="cosine"`).
+   - Paraphrased and repeated inquiries are resolved in `<30ms` with **$0 USD LLM token cost**.
+4. **Multi-Channel Experience**:
    - **Web Chat SPA**: Interactive chat with suggestion chips, citations accordion, and real-time live advisor chat.
-   - **Telegram Bot**: Operates in standalone long-polling mode (`scripts/telegram_worker.py`) or webhook mode.
+   - **Telegram Bot**: Operates in standalone long-polling mode (`scripts/telegram_worker.py`) for `@CL_Academy_bot` or webhook mode.
    - **Contact Form**: Submits inquiries through the webhook pipeline.
-4. **Human-in-the-Loop Escalation & CRM**:
+5. **Human-in-the-Loop Escalation & CRM**:
    - Generates deterministic session IDs (`[FirstName]_[Last4Digits]`).
-   - Bi-directional WebSockets for live chat between students and staff.
+   - Bi-directional WebSockets for live chat between students and staff with deduplication guards.
    - Post-session student satisfaction feedback with 1-to-5 star ratings.
-5. **Operational Telemetry & Metrics**:
-   - Protected `/api/v1/metrics` endpoint providing query counts, cache hit ratios, escalation rates, token usage, and latency.
+6. **Operational Telemetry & Metrics**:
+   - Protected `/api/v1/metrics` endpoint providing query counts, triage/cache hit ratios, escalation rates, token usage, and latency.
 
 ---
 
@@ -76,11 +83,11 @@ graph TD
 ├── backend/
 │   ├── app/
 │   │   ├── api/             # FastAPI routers (chat, telegram, metrics, escalation, health)
-│   │   ├── core/            # Config, logging, zero-hallucination prompts
+│   │   ├── core/            # Config, logging, zero-hallucination prompts, frequent_issues.json
 │   │   ├── db/              # Async SQLAlchemy engine (academy.db)
 │   │   ├── models/          # Relational entities (telemetry, student CRM, escalations)
 │   │   ├── schemas/         # Pydantic v2 DTOs
-│   │   └── services/        # LangGraph workflow, vector store, semantic cache, LLM factory
+│   │   └── services/        # LangGraph workflow, triage engine, vector store, cache, LLM factory
 │   ├── data/
 │   │   ├── raw/             # Official Spanish business markdown documents
 │   │   └── chroma_db/       # Persistent ChromaDB vector database
