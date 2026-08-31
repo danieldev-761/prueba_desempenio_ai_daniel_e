@@ -11,7 +11,7 @@ Key accomplishments in this phase include:
 5. **Post-Session Student Satisfaction:** Built-in 1-to-5 star rating and feedback submission upon session closure.
 6. **Unified Staff Workspace (`AdminPortal.jsx`):** Protected administrative interface allowing advisors to claim live waiting sessions, monitor student profiles in CRM, inspect reviews, and reply directly to Telegram student chats.
 7. **Session Persistence:** Full conversation continuity maintained across page reloads via `sessionStorage`.
-8. **Production Build Verification:** Validated static bundle generation (`npm run build`) and SPA routing rewrites (`vercel.json`).
+8. **Production Build Verification:** Validated static bundle generation (`pnpm run build`) and SPA routing with Nginx Alpine proxy containerization.
 
 ---
 

@@ -69,7 +69,7 @@
   - `EscalationModal.jsx`: Student identification modal generating `[Name]_[ID4Digits]` session IDs.
   - `LiveAdvisorChat.jsx`: Real-time floating live advisor chat window.
 - [x] **TASK-5.4:** Implement session persistence in browser storage (`sessionStorage`) for conversational continuity.
-- [x] **TASK-5.5:** Configure production build and Vercel configuration (`frontend/vercel.json`).
+- [x] **TASK-5.5:** Configure production build and Nginx Alpine container serving (`frontend/Dockerfile`).
 
 ---
 
@@ -77,7 +77,7 @@
 - [x] **TASK-6.1:** Author production multi-stage `backend/Dockerfile` with non-root user execution.
 - [x] **TASK-6.2:** Author multi-stage `frontend/Dockerfile` with Nginx Alpine static serving and API proxy routing.
 - [x] **TASK-6.3:** Build root `docker-compose.yml` orchestrating backend and frontend services with persistent volumes.
-- [x] **TASK-6.4:** Configure deployment parameters for Railway/Render and Vercel.
+- [x] **TASK-6.4:** Configure deployment parameters exclusively for Railway (`backend/railway.toml`, `frontend/railway.toml`).
 
 ---
 

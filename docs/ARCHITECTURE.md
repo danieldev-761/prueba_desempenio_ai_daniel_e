@@ -13,7 +13,7 @@ The solution follows a modern, decoupled **Layered / Clean Architecture** patter
 │                                                                                        │
 │   ┌──────────────────────────────┐    ┌─────────────────┐    ┌─────────────────────┐   │
 │   │ React + Vite + Tailwind (Web)│    │  Telegram Bot   │    │ Third-Party Webhook │   │
-│   │     (Deployed on Vercel)     │    │ (Webhook/Poll)  │    │  (Contact Inquiry)  │   │
+│   │    (Railway Container / Web) │    │ (Webhook/Poll)  │    │  (Contact Inquiry)  │   │
 │   └──────────────┬───────────────┘    └────────┬────────┘    └──────────┬──────────┘   │
 └──────────────────┼─────────────────────────────┼────────────────────────┼──────────────┘
                    │                             │                        │
@@ -105,5 +105,6 @@ Uses the **Factory Pattern** driven by environment variables (`LLM_PROVIDER=open
 ## 3. Containerization & Deployment Strategy
 
 * **Docker:** Multi-stage, non-root container (`backend/Dockerfile`) with automated startup entrypoint (`run.sh`) that ingests documents on boot if the database is unpopulated.
-* **Frontend:** React + Vite + Tailwind CSS deployed on Vercel or locally served.
-* **Backend:** Deployable on Railway, Render, or Docker Compose.
+* **Frontend:** React + Vite + Tailwind CSS containerized with Nginx Alpine (`frontend/Dockerfile`) deployed on Railway or locally served.
+* **Backend:** Deployable on Railway or Docker Compose with persistent data volume mounted at `/app/data`.
+* **Platform:** Standardized exclusively on **Railway** container infrastructure under the Starter / Trial plan.
