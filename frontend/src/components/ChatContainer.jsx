@@ -8,12 +8,16 @@ export default function ChatContainer({
   isLoading,
   onTriggerEscalation,
   onSendMessage,
+  onInactivityResolved,
   pendingReviewSession,
   onClearReviewSession,
 }) {
   const scrollRef = useRef(null);
   const [showInactivityCheck, setShowInactivityCheck] = useState(false);
   const inactivityTimerRef = useRef(null);
+  const [isSessionResolved, setIsSessionResolved] = useState(() => {
+    return sessionStorage.getItem('academy_triage_resolved') === 'true';
+  });
 
   // Review Card Local State
   const [rating, setRating] = useState(5);
@@ -29,14 +33,23 @@ export default function ChatContainer({
     }
   }, [messages, isLoading, showInactivityCheck, pendingReviewSession]);
 
-  // 2-Minute Inactivity Follow-Up Timer
+  // Check if student has reached at least Tier 1 in the deterministic triage funnel
+  const hasReachedTriageTier1 = messages.some(
+    (m) =>
+      m.role === 'assistant' &&
+      (m.status === 'RESOLVED_BY_FAQ_TRIAGE' ||
+        m.sources?.some((s) => s.document?.includes('frequent_issues')))
+  );
+
+  // 2-Minute Inactivity Follow-Up Timer (Strictly Gated to Triage Tier >= 1)
   useEffect(() => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
 
-    if (isLoading || messages.length <= 1) {
+    // Only arm if user reached at least Tier 1 of triage, session is not resolved, and not loading
+    if (isLoading || messages.length <= 1 || isSessionResolved || !hasReachedTriageTier1) {
       setShowInactivityCheck(false);
       return;
     }
@@ -57,12 +70,14 @@ export default function ChatContainer({
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, [messages, isLoading]);
+  }, [messages, isLoading, isSessionResolved, hasReachedTriageTier1]);
 
   const handleInactivityResolved = () => {
     setShowInactivityCheck(false);
-    if (onSendMessage) {
-      onSendMessage('¡Listo! Pude resolver mi inquietud con la información oficial.');
+    setIsSessionResolved(true);
+    sessionStorage.setItem('academy_triage_resolved', 'true');
+    if (onInactivityResolved) {
+      onInactivityResolved();
     }
   };
 

@@ -153,6 +153,20 @@ export default function App() {
     setLiveChatSession(null);
   };
 
+  const handleInactivityResolved = () => {
+    const farewellMessage = {
+      role: 'assistant',
+      content:
+        '✅ **¡Nos alegra haberte ayudado a resolver tu inconveniente!**\n\nDamos por concluida con éxito esta consulta. Recuerda que ante cualquier duda sobre nuestros programas de idiomas o trámites académicos, nuestro canal virtual está siempre a tu disposición.\n\n¡Te deseamos muchos éxitos en tu aprendizaje!',
+      status: 'RESOLVED_BY_FAQ_TRIAGE',
+      confidence_score: 1.0,
+      sources: [],
+      escalated: false,
+      timestamp: new Date().toISOString(),
+    };
+    updateMessages([...messages, farewellMessage]);
+  };
+
   const handleClearReviewSession = () => {
     setPendingReviewSession(null);
     sessionStorage.removeItem(PENDING_REVIEW_KEY);
@@ -184,6 +198,7 @@ export default function App() {
             setIsEscalationModalOpen(true);
           }}
           onSendMessage={handleSendMessage}
+          onInactivityResolved={handleInactivityResolved}
           pendingReviewSession={pendingReviewSession}
           onClearReviewSession={handleClearReviewSession}
         />
