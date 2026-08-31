@@ -167,3 +167,24 @@ Accepted.
 * **Pros:** Native container execution directly from Dockerfiles, automatic continuous deployment on git push, automatic HTTPS domain provisioning, persistent volume support for SQLite and ChromaDB, and compliance with free/trial quotas.
 * **Cons:** Ephemeral free-tier hours require monitoring usage to avoid interruption.
 
+---
+
+## ADR-010: Transition to gemini-embedding-001 for Google GenAI v1beta Compatibility
+
+### Context
+During vector ingestion with Google Gemini, requests utilizing `models/text-embedding-004` failed with a `404 NOT_FOUND` error (`models/text-embedding-004 is not found for API version v1beta, or is not supported for embedContent`). Inspection via the Google GenAI SDK revealed that Google's active API endpoints under `v1beta` designate `models/gemini-embedding-001` as the official, supported model for `embedContent` operations.
+
+### Decision
+Update the default Google GenAI embeddings model from `text-embedding-004` to `gemini-embedding-001` across:
+1. `backend/app/core/config.py` (`GEMINI_EMBEDDING_MODEL = "gemini-embedding-001"`).
+2. `backend/.env.example`.
+3. Architecture Decision Records and environment templates.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Restores 100% operational compatibility with Google AI Studio `v1beta` API, generates stable 3072-dimensional dense vector representations, and resolves the 404 NOT_FOUND exception during ChromaDB ingestion.
+* **Cons:** Embedding dimension is 3072, requiring fresh ChromaDB collection initialization (`reset=True`) upon first ingestion.
+
+

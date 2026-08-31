@@ -16,3 +16,4 @@
 - Lunes-31/08/2026-08:31 : Configuración del bot de Telegram oficial @CL_Academy_bot (TELEGRAM_BOT_NAME) en backend/config.py, plantillas de entorno, docker-compose.yml, enlace interactivo en Navbar.jsx y diagrama de arquitectura en README.md
 - Lunes-31/08/2026-08:43 : Corrección de resolución de módulo en backend/scripts/ingest.py mediante inyección de sys.path con la ruta raíz del backend para permitir ejecución directa independiente del directorio actual
 - Lunes-31/08/2026-08:47 : Mejora en la resolución de variables de entorno en config.py para cargar .env desde backend y raíz, y validación explícita con mensaje descriptivo ante ausencia de GEMINI_API_KEY en llm_factory.py
+- Lunes-31/08/2026-09:00 : Documentación de la transición al modelo gemini-embedding-001 en ADR-010 y backend/config.py para compatibilidad con la API v1beta de Google GenAI y soporte de embedContent

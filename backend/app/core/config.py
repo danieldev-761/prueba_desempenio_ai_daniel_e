@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     # Google Gemini Settings (Primary Provider)
     GOOGLE_API_KEY: str = Field(default="", description="Google API Key alias")
     GEMINI_API_KEY: str = Field(default="", description="Google Gemini API Key")
-    GEMINI_CHAT_MODEL: str = "gemini-2.5-flash"
-    GEMINI_EMBEDDING_MODEL: str = "models/text-embedding-004"
+    GEMINI_CHAT_MODEL: str = "gemini-3.1-flash-lite"
+    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     # Vector Database & Caching
     CHROMA_PERSIST_DIR: str = "./data/chroma_db"
