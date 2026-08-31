@@ -38,6 +38,7 @@ class SemanticCacheService:
             client=self._client,
             collection_name=self.collection_name,
             embedding_function=self.embeddings,
+            collection_metadata={"hnsw:space": "cosine"},
         )
         logger.info(
             f"SemanticCacheService initialized: collection='{self.collection_name}', min_similarity={self.similarity_threshold} (max_distance={self.max_distance})"
@@ -68,11 +69,18 @@ class SemanticCacheService:
                 return None
 
             doc, distance = results[0]
-            # In cosine space: distance = 1 - cosine_similarity -> similarity = 1 - distance
-            calculated_similarity = max(0.0, min(1.0, 1.0 - float(distance)))
+            # Robust similarity calculation:
+            # In cosine space: distance = 1 - cosine_sim -> sim = 1 - distance
+            # If collection defaults to L2 on normalized vectors: L2^2 = 2 * (1 - cosine) -> sim = 1 - dist/2
+            dist_val = float(distance)
+            col_space = (self.collection.metadata or {}).get("hnsw:space", "cosine")
+            if col_space == "cosine":
+                calculated_similarity = max(0.0, min(1.0, 1.0 - dist_val))
+            else:
+                calculated_similarity = max(0.0, min(1.0, 1.0 - (dist_val / 2.0)))
 
             # Match criteria: similarity >= threshold
-            if calculated_similarity >= self.similarity_threshold or distance <= self.max_distance:
+            if calculated_similarity >= self.similarity_threshold or dist_val <= self.max_distance:
                 metadata = doc.metadata or {}
                 cached_response = metadata.get("response", "")
                 sources = json.loads(metadata.get("sources_json", "[]"))
@@ -131,6 +139,7 @@ class SemanticCacheService:
                 client=self._client,
                 collection_name=self.collection_name,
                 embedding_function=self.embeddings,
+                collection_metadata={"hnsw:space": "cosine"},
             )
             logger.info("Semantic cache cleared.")
         except Exception as e:

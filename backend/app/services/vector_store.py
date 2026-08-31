@@ -26,6 +26,7 @@ class VectorStoreService:
             client=self._client,
             collection_name=self.collection_name,
             embedding_function=self.embeddings,
+            collection_metadata={"hnsw:space": "cosine"},
         )
         logger.info(
             f"VectorStoreService initialized: collection='{self.collection_name}' at '{self.persist_directory}'"
@@ -70,6 +71,7 @@ class VectorStoreService:
                 client=self._client,
                 collection_name=self.collection_name,
                 embedding_function=self.embeddings,
+                collection_metadata={"hnsw:space": "cosine"},
             )
             logger.info(f"Collection '{self.collection_name}' reset.")
         except Exception as e:
