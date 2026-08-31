@@ -4,26 +4,9 @@
 # ======================================================================
 
 # ----------------------------------------------------------------------
-# Stage 1: Frontend Build (Node.js + pnpm)
+# Stage 1: Backend Dependencies (Python + uv)
 # ----------------------------------------------------------------------
-FROM node:20-slim AS frontend-builder
-WORKDIR /frontend
-
-# Enable corepack for pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy package descriptors and install dependencies
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-# Copy frontend source code and compile production bundle
-COPY frontend/ ./
-RUN pnpm build
-
-# ----------------------------------------------------------------------
-# Stage 2: Backend Dependencies (Python + uv)
-# ----------------------------------------------------------------------
-FROM python:3.11-slim AS backend-builder
+FROM python:3.11-slim AS builder
 WORKDIR /build
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -35,7 +18,7 @@ RUN uv venv /opt/venv && \
     uv pip install --no-cache --python /opt/venv/bin/python -r requirements.txt
 
 # ----------------------------------------------------------------------
-# Stage 3: Final Production Runtime Container
+# Stage 2: Final Production Runtime Container
 # ----------------------------------------------------------------------
 FROM python:3.11-slim AS runtime
 
@@ -50,8 +33,8 @@ RUN groupadd -g 1001 appgroup && \
 
 WORKDIR /app
 
-# Copy Python virtual environment from Stage 2
-COPY --from=backend-builder /opt/venv /opt/venv
+# Copy Python virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy backend application source code, operational scripts, and raw markdown knowledge base
@@ -59,8 +42,8 @@ COPY --chown=appuser:appgroup backend/app /app/app
 COPY --chown=appuser:appgroup backend/scripts /app/scripts
 COPY --chown=appuser:appgroup backend/data/raw /app/data/raw
 
-# Copy compiled React frontend bundle from Stage 1 into /app/dist
-COPY --chown=appuser:appgroup --from=frontend-builder /frontend/dist /app/dist
+# Copy production-ready React frontend bundle directly into /app/dist
+COPY --chown=appuser:appgroup frontend/dist /app/dist
 
 # Prepare persistent data directory with proper ownership
 RUN mkdir -p /app/data/chroma_db && chown -R appuser:appgroup /app/data /app

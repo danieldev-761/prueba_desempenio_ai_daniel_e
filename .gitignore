@@ -31,8 +31,9 @@ backend/data/chroma_db/
 
 # Node & Frontend
 node_modules/
-dist/
 .vite/
+!frontend/dist/
+!frontend/dist/**
 
 # Logs & temp
 *.log

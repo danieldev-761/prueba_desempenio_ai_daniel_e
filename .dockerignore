@@ -11,8 +11,9 @@ venv/
 .env
 .env.*
 node_modules/
-dist/
 .vite/
+!frontend/dist/
+!frontend/dist/**
 *.db
 *.sqlite
 *.sqlite3
