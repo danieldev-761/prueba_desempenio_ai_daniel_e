@@ -36,12 +36,12 @@ Processes user questions through the LangGraph RAG pipeline (Semantic Cache $\ri
   "confidence_score": 0.94,
   "sources": [
     {
-      "document": "courses_and_modalities.md",
-      "section": "Intensive Schedules"
+      "document": "cursos_y_modalidades.md",
+      "section": "Turno Intensivo de Lunes a Viernes"
     },
     {
-      "document": "pricing_and_payment_methods.md",
-      "section": "Tuition Rates & Discounts"
+      "document": "precios_y_metodos_de_pago.md",
+      "section": "Tarifas Oficiales de Matrícula y Programas"
     }
   ],
   "escalated": false,

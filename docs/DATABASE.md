@@ -100,16 +100,16 @@ Persisted under `./backend/data/chroma_db`.
   * OpenAI: `text-embedding-3-small` (1536 dimensions)
   * Gemini: `models/text-embedding-004` (768 dimensions)
 * **Ingested Documents:**
-  * `courses_and_modalities.md`
-  * `pricing_and_payment_methods.md`
-  * `admissions_and_certifications.md`
+  * `cursos_y_modalidades.md`
+  * `precios_y_metodos_de_pago.md`
+  * `inscripciones_y_certificaciones.md`
 * **Chunking Strategy:** `RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)`.
 * **Metadata Schema:**
   ```json
   {
-    "source_file": "pricing_and_payment_methods.md",
-    "section": "Tuition Rates & Discounts",
-    "chunk_id": "pricing_and_payment_methods_chunk_04"
+    "source_file": "precios_y_metodos_de_pago.md",
+    "section": "Tarifas Oficiales de Matrícula y Programas",
+    "chunk_id": "precios_y_metodos_de_pago_chunk_04"
   }
   ```
 

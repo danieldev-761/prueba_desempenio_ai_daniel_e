@@ -88,7 +88,7 @@ Uses the **Factory Pattern** driven by environment variables (`LLM_PROVIDER=open
 ### 2.4 Vector Engine & Semantic Cache (`backend/app/services/vector_store.py`)
 * **Engine:** ChromaDB in persistent client mode stored at `./backend/data/chroma_db`.
 * **Collections:**
-  1. `academy_docs`: Ingests 3 core business documents (`courses_and_modalities.md`, `pricing_and_payment_methods.md`, `admissions_and_certifications.md`) chunked via `RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)`.
+  1. `academy_docs`: Ingests 3 core business documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`) chunked via `RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)`.
   2. `semantic_cache`: Stores previous resolved queries and answers. Hit criteria: Cosine distance $\le 0.08$ ($\ge 92\%$ semantic similarity).
 
 ### 2.5 Relational Telemetry & Persistence (`backend/app/models/` & `backend/app/db/`)

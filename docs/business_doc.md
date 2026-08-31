@@ -70,23 +70,23 @@ Every user query passes through an optimized decision funnel designed to minimiz
 
 ## 4. Business Knowledge Base Structure
 
-The academy's knowledge repository is organized into three structured business documents:
+The academy's knowledge repository is organized into three structured business documents (located in `backend/data/raw/`):
 
-1. **`courses_and_modalities.md`**
+1. **`cursos_y_modalidades.md`**
    - Languages offered: English, French, German, Italian, Portuguese.
    - CEFR Framework alignment: A1 (Beginner), A2 (Elementary), B1 (Intermediate), B2 (Upper-Intermediate), C1 (Advanced).
    - Modalities: 100% Virtual (live classes + LMS), On-Campus (Sedes Bogotá: Chapinero & Calle 100; Medellín: El Poblado), Hybrid.
    - Schedules: Morning (6:00 AM - 8:00 AM COT), Standard (9:00 AM - 11:00 AM, 2:00 PM - 4:00 PM), Evening (6:30 PM - 8:30 PM), Saturdays (8:00 AM - 1:00 PM).
    - Placement test: Free 25-minute online evaluation.
 
-2. **`pricing_and_payment_methods.md`**
+2. **`precios_y_metodos_de_pago.md`**
    - Tuition rates per module/level in COP (e.g., Intensive 40-hour module: $650,000 COP; Regular Saturday track: $520,000 COP; 1-on-1 private tutoring: $75,000 COP/hour).
    - Enrollment fees: One-time registration fee ($80,000 COP), includes digital textbook license and LMS access.
    - Payment gateways: PSE (Colombian interbank transfers), Bancolombia QR/Account Transfer, Nequi, Credit Cards (Visa, Mastercard, American Express).
    - Discounts: 10% early-bird discount (paying 10+ business days prior to cohort start), 15% alumni/continuation discount.
    - Refund policy: 100% refund up to 3 business days before cohort start; no refunds once classes commence.
 
-3. **`admissions_and_certifications.md`**
+3. **`inscripciones_y_certificaciones.md`**
    - Registration requirements: Valid national ID (Cédula de Ciudadanía, Tarjeta de Identidad, Cédula de Extranjería, Pasaporte), minimum age (14 years for general adult track; specialized teens program for ages 10-13).
    - Registration procedure: 4-step flow (Online application -> Placement test -> Course selection -> Payment confirmation).
    - Certifications: Academy certificate of completion granted upon passing with $\ge 80\%$ grade and $\ge 85\%$ attendance.

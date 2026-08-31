@@ -4,16 +4,16 @@
 ---
 
 ## Phase 1: Environment Setup, Configuration & Business Documents
-- [ ] **TASK-1.1:** Initialize monorepo directory layout (`backend/`, `frontend/`, `backend/data/`).
-- [ ] **TASK-1.2:** Implement synthetic business data generator script (`backend/scripts/generate_academy_data.py`) to programmatically create and populate the 3 official academy markdown documents in `backend/data/raw/`:
-  - `courses_and_modalities.md`: Programs (English, French, German, Italian, Portuguese), CEFR levels (A1-C1), modalities (Virtual, In-Person Sedes Bogotá/Medellín, Hybrid), daily schedules and shift hours.
-  - `pricing_and_payment_methods.md`: Tuition fees in COP/USD per module, enrollment fee, accepted payment methods (PSE, Bancolombia, Nequi, Credit Card), early-bird discounts, refund rules.
-  - `admissions_and_certifications.md`: Registration requirements, ID documents (Cédula, Tarjeta de Identidad, Pasaporte), placement test procedure, academy diplomas, and international exam prep (IELTS, TOEFL, Cambridge, DELF, Goethe).
-- [ ] **TASK-1.3:** Setup backend dependency manifest (`backend/requirements.txt`) with locked versions (FastAPI, LangGraph, LangChain, ChromaDB, SQLAlchemy, Aiosqlite, Pydantic-Settings, Uvicorn, etc.).
-- [ ] **TASK-1.4:** Create environment templates:
+- [x] **TASK-1.1:** Initialize monorepo directory layout (`backend/`, `frontend/`, `backend/data/`).
+- [x] **TASK-1.2:** Implement synthetic business data generator script (`backend/scripts/generate_academy_data.py`) to programmatically create and populate the 3 official academy markdown documents in `backend/data/raw/`:
+  - `cursos_y_modalidades.md`: Programs (English, French, German, Italian, Portuguese), CEFR levels (A1-C1), modalities (Virtual, In-Person Sedes Bogotá/Medellín, Hybrid), daily schedules and shift hours.
+  - `precios_y_metodos_de_pago.md`: Tuition fees in COP/USD per module, enrollment fee, accepted payment methods (PSE, Bancolombia, Nequi, Credit Card), early-bird discounts, refund rules.
+  - `inscripciones_y_certificaciones.md`: Registration requirements, ID documents (Cédula, Tarjeta de Identidad, Pasaporte), placement test procedure, academy diplomas, and international exam prep (IELTS, TOEFL, Cambridge, DELF, Goethe).
+- [x] **TASK-1.3:** Setup backend dependency manifest (`backend/requirements.txt`) with locked versions (FastAPI, LangGraph, LangChain, ChromaDB, SQLAlchemy, Aiosqlite, Pydantic-Settings, Uvicorn, etc.).
+- [x] **TASK-1.4:** Create environment templates:
   - `backend/.env.example`: `LLM_PROVIDER`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `DATABASE_URL`, `CHROMA_PERSIST_DIR`, `TELEGRAM_BOT_TOKEN`, `ADMIN_API_KEY`, `PORT`.
   - `frontend/.env.example`: `VITE_API_URL`.
-- [ ] **TASK-1.5:** Configure logging, CORS settings, and application configuration via Pydantic `BaseSettings` (`backend/app/core/config.py`).
+- [x] **TASK-1.5:** Configure logging, CORS settings, and application configuration via Pydantic `BaseSettings` (`backend/app/core/config.py`).
 
 ---
 

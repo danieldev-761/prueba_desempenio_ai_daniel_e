@@ -51,7 +51,7 @@ graph TD
 ## ✨ Key Capabilities
 
 1. **Zero-Hallucination Guardrails & Grounded Answers**:
-   - Strict citation requirements referencing official academy business documents (`courses_and_modalities.md`, `pricing_and_payment_methods.md`, `admissions_and_certifications.md`).
+   - Strict citation requirements referencing official academy business documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`).
    - If an inquiry is out-of-scope or unverified, the LLM emits an `[[ESCALATE]]` token, routing the student to the Academic Advisory Team.
 2. **Sub-Second Semantic Caching**:
    - Persists query-response embeddings into a dedicated ChromaDB collection.

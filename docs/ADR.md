@@ -74,7 +74,7 @@ Accepted.
 ## ADR-005: Programmatic Synthetic Knowledge Base Generation
 
 ### Context
-To ensure consistent, repeatable, and idempotent creation of the 3 official academy markdown documents (`courses_and_modalities.md`, `pricing_and_payment_methods.md`, `admissions_and_certifications.md`) across environments without relying on manual file creation.
+To ensure consistent, repeatable, and idempotent creation of the 3 official academy markdown documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`) across environments without relying on manual file creation.
 
 ### Decision
 Implement a dedicated Python script (`backend/scripts/generate_academy_data.py`) that generates the 3 structured knowledge base documents into `backend/data/raw/`.
