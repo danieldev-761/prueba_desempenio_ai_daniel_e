@@ -1,0 +1,35 @@
+# Environment and agent configurations (local / global only)
+.agent/
+.agents/
+.claude/
+AGENTS.md
+GEMINI.md
+CLAUDE.md
+
+# Virtual environment & Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+
+# Environment files
+.env
+.env.local
+
+# Databases & local storage
+data/
+*.db
+*.sqlite
+*.sqlite3
+chroma_db/
+
+# Node & Frontend
+node_modules/
+dist/
+.vite/
+
+# Logs & temp
+*.log
+.DS_Store
