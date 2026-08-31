@@ -15,3 +15,4 @@
 - Lunes-31/08/2026-08:24 : Eliminación completa de configuraciones y referencias a plataformas externas ajenas a Railway (eliminación de vercel.json, depuración de ARCHITECTURE.md, TASKS.md y tech-doc-f5.md para estandarizar el despliegue de contenedores exclusivamente en Railway)
 - Lunes-31/08/2026-08:31 : Configuración del bot de Telegram oficial @CL_Academy_bot (TELEGRAM_BOT_NAME) en backend/config.py, plantillas de entorno, docker-compose.yml, enlace interactivo en Navbar.jsx y diagrama de arquitectura en README.md
 - Lunes-31/08/2026-08:43 : Corrección de resolución de módulo en backend/scripts/ingest.py mediante inyección de sys.path con la ruta raíz del backend para permitir ejecución directa independiente del directorio actual
+- Lunes-31/08/2026-08:47 : Mejora en la resolución de variables de entorno en config.py para cargar .env desde backend y raíz, y validación explícita con mensaje descriptivo ante ausencia de GEMINI_API_KEY en llm_factory.py

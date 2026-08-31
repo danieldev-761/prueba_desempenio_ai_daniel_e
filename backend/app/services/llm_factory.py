@@ -24,7 +24,11 @@ def get_chat_model(
             or os.getenv("GOOGLE_API_KEY", "")
         )
         if not api_key:
-            logger.warning("GEMINI_API_KEY / GOOGLE_API_KEY is not set. Gemini chat model may fail if invoked without key.")
+            raise ValueError(
+                "La clave GEMINI_API_KEY o GOOGLE_API_KEY no está configurada o está vacía en backend/.env.\n"
+                "Por favor edita tu archivo backend/.env y define:\n"
+                "GEMINI_API_KEY=AIzaSy..."
+            )
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
             return ChatGoogleGenerativeAI(
@@ -69,7 +73,11 @@ def get_embeddings_model(
             or os.getenv("GOOGLE_API_KEY", "")
         )
         if not api_key:
-            logger.warning("GEMINI_API_KEY / GOOGLE_API_KEY is not set. Gemini embeddings may fail if invoked without key.")
+            raise ValueError(
+                "La clave GEMINI_API_KEY o GOOGLE_API_KEY no está configurada o está vacía en backend/.env.\n"
+                "Por favor edita tu archivo backend/.env y define:\n"
+                "GEMINI_API_KEY=AIzaSy..."
+            )
         try:
             from langchain_google_genai import GoogleGenerativeAIEmbeddings
             return GoogleGenerativeAIEmbeddings(
