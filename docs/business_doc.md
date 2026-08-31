@@ -95,11 +95,12 @@ The academy's knowledge repository is organized into three structured business d
 ---
 
 ## 5. Brand Voice & Communication Guidelines
-
-* **Persona:** Senior Academic Advisor at Academia de Idiomas Colombiana.
-* **Tone:** Professional, welcoming, culturally warm (*"con mucho gusto"*, respectful, supportive), clear, concise, and focused on learner empowerment.
-* **Language Support:** Primary language for operational contracts and code is English; customer-facing assistant answers fluidly in Spanish and English according to the user's inquiry language.
-* **Call to Action (CTA):** Guide prospective students toward scheduling their free placement test or completing enrollment.
+* **Persona:** Asesor Académico Senior de la Academia de Idiomas Colombiana.
+* **Tone:** Profesional, empático, cálido (*"con mucho gusto"*, respetuoso, cercano), claro, conciso y motivador hacia el aprendizaje.
+* **Language Guidelines:** 
+  * **Customer-Facing Layer:** 100% en **Español** (respuestas del bot, interfaz web, menú y mensajes de Telegram, prompts y ejemplos few-shot).
+  * **Engineering Layer:** Documentación (`docs/`, `documentation/`, `README.md`) y commits en **Inglés**.
+* **Call to Action (CTA):** Guiar a los estudiantes a agendar su prueba de clasificación gratuita o completar su matrícula online.
 
 ---
 

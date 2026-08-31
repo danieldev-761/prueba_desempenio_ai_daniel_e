@@ -27,8 +27,10 @@
 
 ---
 
-## 4. Deliverable Requirements & Governance Rules
-* **Language Consistency:** All markdown docs, docstrings, system prompts, API contracts, and commit messages must be in **English**. Customer-facing responses serve the student's language (Spanish/English).
+## 4. Deliverable Requirements & Language Conventions
+* **Language Architecture Split:**
+  * **Documentation & Technical Specs (English):** All architecture specifications, developer documentation (`README.md`, `docs/*`, `documentation/*`), code docstrings, and git commit messages must be written strictly in **English**.
+  * **User Experience & Conversational Layer (Spanish):** The entire user-facing surface must be in **Spanish**, including the React web application interface (labels, buttons, modals), chat interactions, Telegram bot messages, system prompt persona, and the 3 official academy business knowledge base documents (`backend/data/raw/*.md`).
 * **Zero Critical Dependencies:** The solution must run completely offline/local without mandatory cloud Redis or PostgreSQL servers.
 * **Verifiable Execution:** The backend must spin up seamlessly using `docker-compose up` or `uv run uvicorn app.main:app` (alternatively `pip install -r requirements.txt`).
 * **Document Attention & Change Notification:** Always strictly follow the specifications in `docs/` (`ARCHITECTURE.md`, `ADR.md`, `API.md`, `DATABASE.md`, `TASKS.md`, `RULES.md`, `business_doc.md`). Any deviation, extra files, or architectural additions must be explicitly reported to the user and documented in the ADR/changelog.
