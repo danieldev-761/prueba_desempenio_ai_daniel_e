@@ -82,8 +82,8 @@
 ---
 
 ## Phase 7: Automated Testing, Documentation & Packaging
-- [ ] **TASK-7.1:** Write unit tests for chunking, embedding generation, and semantic cache (`backend/tests/test_vector_store.py`).
-- [ ] **TASK-7.2:** Write integration tests for LangGraph flow covering in-scope, out-of-scope, and cache hit scenarios (`backend/tests/test_rag_pipeline.py`).
-- [ ] **TASK-7.3:** Write API endpoint tests using `httpx.AsyncClient` (`backend/tests/test_api.py`).
-- [ ] **TASK-7.4:** Write production-ready `README.md` in English with architecture diagram, local setup instructions, Docker commands, API documentation, and test execution.
-- [ ] **TASK-7.5:** Package deliverable into clean `.zip` archive complying with all criteria.
+- [x] **TASK-7.1:** Write unit test suites (`backend/tests/unit/test_rag_pipeline.py`, `backend/tests/unit/test_cache.py`, `backend/tests/unit/test_prompts.py`).
+- [x] **TASK-7.2:** Write integration test suites (`backend/tests/integration/test_chat_endpoints.py`, `backend/tests/integration/test_telegram_webhook.py`).
+- [x] **TASK-7.3:** Validate hallucination refusal rate ($\ge 90\%$) and latency SLA ($< 2.5s$).
+- [x] **TASK-7.4:** Write deployment runbook and update technical documentation `README.md` in English with architecture diagram, local setup instructions, Docker commands, API documentation, and test execution.
+- [x] **TASK-7.5:** Package deliverable into clean `.zip` archive complying with all criteria.
