@@ -38,10 +38,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy application source code, scripts and raw knowledge base
 COPY --chown=appuser:appgroup app /app/app
 COPY --chown=appuser:appgroup scripts /app/scripts
-COPY --chown=appuser:appgroup data /app/data
+COPY --chown=appuser:appgroup data/raw /app/data/raw
 
 # Prepare persistent data directory with proper ownership
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data /app
+RUN mkdir -p /app/data/chroma_db && chown -R appuser:appgroup /app/data /app
 
 # Ensure shell scripts have execution rights
 RUN chmod +x /app/scripts/run.sh || true

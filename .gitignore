@@ -18,12 +18,16 @@ venv/
 .env
 .env.local
 
-# Databases & local storage
-data/
+# Databases & local storage (preserve raw knowledge base markdown documents)
 *.db
 *.sqlite
 *.sqlite3
-chroma_db/
+**/chroma_db/
+data/chroma_db/
+backend/data/chroma_db/
+!**/data/raw/
+!**/data/raw/**
+
 
 # Node & Frontend
 node_modules/
