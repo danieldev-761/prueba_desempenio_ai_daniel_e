@@ -37,6 +37,34 @@ def test_frequent_issues_detection(query, expected_category):
     assert match is not None
     assert match["category"] == expected_category
     assert len(match["response"]) > 30
+    assert match["tier"] == 1
+
+
+def test_frequent_issues_progressive_funnel():
+    svc = FrequentIssuesService()
+    sess_id = "test_funnel_session"
+
+    # Turn 1: Initial report -> Tier 1
+    m1 = svc.evaluate("Tengo un problema con el pago", session_id=sess_id)
+    assert m1 is not None
+    assert m1["tier"] == 1
+    assert m1["is_escalate"] is False
+    assert "Nivel 1" in m1["title"]
+
+    # Turn 2: Persistence report -> Tier 2 (Deep Technical Diagnostics)
+    m2 = svc.evaluate("Sigo con el problema, no me pasa el pago", session_id=sess_id)
+    assert m2 is not None
+    assert m2["tier"] == 2
+    assert m2["is_escalate"] is False
+    assert "Nivel 2" in m2["title"]
+    assert "VPN" in m2["response"]
+
+    # Turn 3: Exhaustion report -> Tier 3 (Gated Human Escalation)
+    m3 = svc.evaluate("No pude solucionar, ya revisé todo", session_id=sess_id)
+    assert m3 is not None
+    assert m3["tier"] == 3
+    assert m3["is_escalate"] is True
+    assert "[[ESCALATE]]" in m3["response"]
 
 
 def test_frequent_issues_unmatched_query():

@@ -14,6 +14,7 @@ import { sendChatMessage } from './services/api';
 const SESSION_STORAGE_KEY = 'academy_session_id';
 const MESSAGES_STORAGE_KEY = 'academy_messages_history';
 const ADMIN_AUTH_KEY = 'academy_admin_token';
+const PENDING_REVIEW_KEY = 'academy_pending_review';
 
 export default function App() {
   const [sessionId, setSessionId] = useState('');
@@ -29,6 +30,16 @@ export default function App() {
   
   // Live Human Advisor Floating Chat State
   const [liveChatSession, setLiveChatSession] = useState(null);
+
+  // Web Review State for Finalized Escalation Sessions
+  const [pendingReviewSession, setPendingReviewSession] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(PENDING_REVIEW_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Initialize or restore session ID and messages from sessionStorage
   useEffect(() => {
@@ -97,9 +108,12 @@ export default function App() {
 
       updateMessages([...updatedWithUser, botMessage]);
 
-      // If escalated, prime the query context
+      // If escalated (e.g. Tier 3 exhaustion or ungrounded inquiry), open identification modal automatically
       if (data.escalated || data.status === 'ESCALATED_TO_HUMAN') {
         setEscalationQueryContext(queryText);
+        setTimeout(() => {
+          setIsEscalationModalOpen(true);
+        }, 750);
       }
     } catch (err) {
       const errorMessage = {
@@ -113,6 +127,9 @@ export default function App() {
       };
       updateMessages([...updatedWithUser, errorMessage]);
       setEscalationQueryContext(queryText);
+      setTimeout(() => {
+        setIsEscalationModalOpen(true);
+      }, 750);
     } finally {
       setIsLoading(false);
     }
@@ -128,6 +145,19 @@ export default function App() {
     sessionStorage.removeItem(ADMIN_AUTH_KEY);
   };
 
+  const handleCloseLiveChat = () => {
+    if (liveChatSession) {
+      setPendingReviewSession(liveChatSession);
+      sessionStorage.setItem(PENDING_REVIEW_KEY, JSON.stringify(liveChatSession));
+    }
+    setLiveChatSession(null);
+  };
+
+  const handleClearReviewSession = () => {
+    setPendingReviewSession(null);
+    sessionStorage.removeItem(PENDING_REVIEW_KEY);
+  };
+
   // If Admin is logged in, render the Dedicated Full-Page Admin Portal view
   if (adminKey) {
     return <AdminPortal adminKey={adminKey} onLogout={handleAdminLogout} />;
@@ -135,14 +165,10 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900">
-      {/* Navigation Bar */}
+      {/* Navigation Bar without ungated escalation button */}
       <Navbar
         onOpenAdminModal={() => setIsAdminLoginOpen(true)}
         onOpenContactModal={() => setIsContactModalOpen(true)}
-        onOpenEscalationModal={() => {
-          setEscalationQueryContext('');
-          setIsEscalationModalOpen(true);
-        }}
       />
 
       {/* Hero Welcome & Quick Topics */}
@@ -157,6 +183,9 @@ export default function App() {
             setEscalationQueryContext(contextMsg);
             setIsEscalationModalOpen(true);
           }}
+          onSendMessage={handleSendMessage}
+          pendingReviewSession={pendingReviewSession}
+          onClearReviewSession={handleClearReviewSession}
         />
         <InputBar onSendMessage={handleSendMessage} isLoading={isLoading} />
       </main>
@@ -177,7 +206,7 @@ export default function App() {
         onLoginSuccess={handleAdminLoginSuccess}
       />
 
-      {/* Human Escalation Identification Form Modal */}
+      {/* Human Escalation Identification Form Modal (Strictly Gated by System) */}
       <EscalationModal
         isOpen={isEscalationModalOpen}
         initialQuery={escalationQueryContext}
@@ -191,7 +220,7 @@ export default function App() {
       {liveChatSession && (
         <LiveAdvisorChat
           sessionInfo={liveChatSession}
-          onClose={() => setLiveChatSession(null)}
+          onClose={handleCloseLiveChat}
         />
       )}
     </div>

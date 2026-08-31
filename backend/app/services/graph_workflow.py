@@ -51,15 +51,37 @@ class AcademyGraphWorkflow:
             return self.chat_model
         return get_chat_model()
 
-    # --- NODE 0: Deterministic Zero-Token Triage (ADR-012) ---
+    # --- NODE 0: Deterministic Zero-Token Triage (ADR-012 & ADR-013) ---
     def node_deterministic_triage(self, state: AgentState) -> Dict[str, Any]:
         query = state["query"]
-        logger.info(f"LangGraph Node: node_deterministic_triage for query: '{query[:40]}...'")
+        session_id = state.get("session_id", "default_session")
+        logger.info(f"LangGraph Node: node_deterministic_triage for query: '{query[:40]}...' (session='{session_id}')")
 
-        match = self.triage_service.evaluate(query)
+        match = self.triage_service.evaluate(query, session_id=session_id)
         if match is not None:
             latency = (time.perf_counter() - state.get("start_time", time.perf_counter())) * 1000.0
-            logger.info(f"Zero-Token Triage RESOLVED query '{query[:40]}...' via '{match['category']}'")
+            is_escalate = match.get("is_escalate", False) or "[[ESCALATE]]" in match.get("response", "")
+
+            if is_escalate:
+                logger.info(f"Triage Tier 3: Gated escalation triggered for session '{session_id}'")
+                cleaned_text = match["response"].replace("[[ESCALATE]]", "").strip()
+                return {
+                    "triage_hit": True,
+                    "generation": cleaned_text,
+                    "status": "ESCALATED_TO_HUMAN",
+                    "is_escalated": True,
+                    "escalation_reason": "TRIAGE_SELF_SERVICE_EXHAUSTED",
+                    "sources": [{
+                        "document": "frequent_issues.json",
+                        "section": match["title"],
+                        "chunk_id": match["category"],
+                    }],
+                    "relevance_score": 1.0,
+                    "latency_ms": round(latency, 2),
+                    "token_metrics": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "cost_usd": 0.0},
+                }
+
+            logger.info(f"Zero-Token Triage (Tier {match.get('tier', 1)}) RESOLVED query '{query[:40]}...' via '{match['category']}'")
             return {
                 "triage_hit": True,
                 "generation": match["response"],

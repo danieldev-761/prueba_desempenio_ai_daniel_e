@@ -40,15 +40,6 @@ export default function Navbar({ onOpenAdminModal, onOpenContactModal, onOpenEsc
             );
           })()}
 
-          {/* Live Human Advisor Button */}
-          <button
-            onClick={onOpenEscalationModal}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-200 bg-amber-950/60 hover:bg-amber-900/80 border border-amber-800/80 rounded-lg transition-colors duration-200 cursor-pointer shadow-sm"
-          >
-            <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
-            <span>Asesor en Vivo</span>
-          </button>
-
           {/* Contact / Webhook Inquiry Form Button */}
           <button
             onClick={onOpenContactModal}

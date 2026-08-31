@@ -26,6 +26,9 @@ export default function LiveAdvisorChat({ sessionInfo, onClose }) {
       try {
         const history = await getSessionMessages(sessionId);
         setMessages(history);
+        if (history.some((m) => m.sender === 'system' && (m.message.includes('finalizada') || m.message.includes('cerrada')))) {
+          setIsSessionClosed(true);
+        }
       } catch (err) {
         console.error('Failed to load chat history:', err);
       }

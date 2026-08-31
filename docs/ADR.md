@@ -231,6 +231,29 @@ Accepted.
 * **Pros:** Eliminates 100% of LLM API costs and token usage for recurring technical and administrative issues, slashes response latency from ~2s to <5ms, delivers standardized troubleshooting steps to students, and reserves AI resources for genuinely complex academic inquiries.
 * **Cons:** The keyword and regex catalog must be maintained as new institutional procedures arise.
 
+---
+
+## ADR-013: 3-Tier Progressive Triage Funnel, Inactivity Follow-up, and Gated Human Handover
+
+### Context
+Allowing arbitrary or premature human advisor escalation buttons in customer interfaces bypasses self-service mechanisms, saturates human staff, and incurs unnecessary support costs. Conversely, repeating identical canned responses when an issue persists leads to student frustration. A structured, multi-tier containment strategy is required across all operational and technical categories (payments, virtual campus, certificates, placement tests, schedules, freezes, textbook codes, and exam prep), coupled with an automated inactivity follow-up and strictly gated human handover.
+
+### Decision
+Implement a 3-tier progressive triage funnel across all 8 operational categories:
+1. **Tier 1 (Initial Self-Help Checklist):** Immediate, zero-token basic diagnostic checklist delivered upon first problem detection.
+2. **Tier 2 (Deep Technical Troubleshooting):** Triggered when the student indicates persistence or re-queries within the same category. Provides deeper technical checks (network stability, VPN/proxy disablement, bank limits, browser cache/incognito, alternative workflows) with empathetic recognition of the persistent issue.
+3. **Automated 2-Minute Inactivity Follow-Up:** If the student remains inactive for 2 minutes after a triage response, the client displays an automated verification check: *"¿Pudiste solucionar tu inconveniente o necesitas ayuda adicional? [Sí, resuelto] [No, continúa el problema]"*.
+4. **Tier 3 (Gated Human Handover - Last Resort):** Only when the student confirms that Tier 2 troubleshooting has failed (or responds "No" to the follow-up after completing previous tiers), the system recognizes that automated means are exhausted and initiates human advisor handover (`[[ESCALATE]]` / escalation form). All manual, ungated "Hablar con Asesor" buttons are removed.
+5. **Universal Web Review Experience:** Ensure web chat students receive the 1-to-5 star rating and feedback card upon advisor session resolution, matching the Telegram review workflow and synchronizing directly with the CRM.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Minimizes advisor saturation, guarantees thorough self-service troubleshooting across all operational domains, provides empathetic progressive support without token consumption, and ensures equitable review collection across all communication channels.
+* **Cons:** Requires client-side timer management and state tracking per session.
+
+
 
 
 
