@@ -17,3 +17,4 @@
 - Lunes-31/08/2026-08:43 : Corrección de resolución de módulo en backend/scripts/ingest.py mediante inyección de sys.path con la ruta raíz del backend para permitir ejecución directa independiente del directorio actual
 - Lunes-31/08/2026-08:47 : Mejora en la resolución de variables de entorno en config.py para cargar .env desde backend y raíz, y validación explícita con mensaje descriptivo ante ausencia de GEMINI_API_KEY en llm_factory.py
 - Lunes-31/08/2026-09:00 : Documentación de la transición al modelo gemini-embedding-001 en ADR-010 y backend/config.py para compatibilidad con la API v1beta de Google GenAI y soporte de embedContent
+- Lunes-31/08/2026-09:13 : Resolución determinista de rutas absolutas para CHROMA_PERSIST_DIR y DATABASE_URL en backend/app/core/config.py, sincronizando el almacén vectorial entre procesos y corrigiendo la búsqueda de similitud en el worker de Telegram

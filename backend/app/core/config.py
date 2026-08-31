@@ -29,14 +29,14 @@ class Settings(BaseSettings):
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     # Vector Database & Caching
-    CHROMA_PERSIST_DIR: str = "./data/chroma_db"
+    CHROMA_PERSIST_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "data" / "chroma_db")
     ACADEMY_COLLECTION_NAME: str = "academy_docs"
     CACHE_COLLECTION_NAME: str = "semantic_cache"
     CACHE_SIMILARITY_THRESHOLD: float = 0.82  # Cosine similarity >= 0.82 (Distance <= 0.18)
     RETRIEVAL_SIMILARITY_THRESHOLD: float = 0.45
 
     # Relational Database / Telemetry
-    DATABASE_URL: str = "sqlite+aiosqlite:///./data/academy.db"
+    DATABASE_URL: str = f"sqlite+aiosqlite:///{str(Path(__file__).resolve().parent.parent.parent / 'data' / 'academy.db')}"
 
     # Security & Admin Access
     ADMIN_API_KEY: str = Field(default="admin123", description="Secret key required to access /metrics and admin dashboard")
