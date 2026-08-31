@@ -41,18 +41,18 @@
 ---
 
 ## Phase 4: Database, Telemetry & FastAPI REST Endpoints
-- [ ] **TASK-4.1:** Configure async SQLAlchemy engine and session factory (`backend/app/db/session.py`).
-- [ ] **TASK-4.2:** Build ORM entities (`backend/app/models/telemetry.py`, `backend/app/models/escalation.py`) for `telemetry_logs`, `escalated_sessions`, `live_chat_messages`, `student_profiles`, and `session_reviews`.
-- [ ] **TASK-4.3:** Create request and response DTO schemas with Pydantic v2 (`backend/app/schemas/chat.py`, `backend/app/schemas/metrics.py`, `backend/app/schemas/escalation.py`).
-- [ ] **TASK-4.4:** Implement API controllers:
+- [x] **TASK-4.1:** Configure async SQLAlchemy engine and session factory (`backend/app/db/session.py`).
+- [x] **TASK-4.2:** Build ORM entities (`backend/app/models/telemetry.py`, `backend/app/models/escalation.py`) for `telemetry_logs`, `escalated_sessions`, `live_chat_messages`, `student_profiles`, and `session_reviews`.
+- [x] **TASK-4.3:** Create request and response DTO schemas with Pydantic v2 (`backend/app/schemas/chat.py`, `backend/app/schemas/metrics.py`, `backend/app/schemas/escalation.py`).
+- [x] **TASK-4.4:** Implement API controllers:
   - `POST /api/v1/chat`: Main RAG conversational endpoint.
   - `POST /api/v1/telegram/webhook`: Webhook handler for Telegram bot interactions.
   - `GET /api/v1/metrics`: Analytics endpoint exposing query volume, escalation rate (%), latency, and cost calculations.
   - `GET /health`: Uptime and readiness healthcheck.
-  - `POST /api/v1/escalations/start`: Initiation of human advisor session.
-  - `GET /api/v1/escalations/sessions`: Active sessions list for advisors.
-  - `WebSocket /api/v1/ws/chat/{session_id}`: Real-time live advisor chat.
-- [ ] **TASK-4.5:** Build standalone Telegram polling worker option (`backend/scripts/telegram_worker.py`) for local development without tunneling.
+  - `POST /api/v1/escalation/start`: Initiation of human advisor session.
+  - `GET /api/v1/escalation/sessions`: Active sessions list for advisors.
+  - `WebSocket /api/v1/escalation/ws/chat/{session_id}`: Real-time live advisor chat.
+- [x] **TASK-4.5:** Build standalone Telegram polling worker option (`backend/scripts/telegram_worker.py`) for local development without tunneling.
 
 ---
 
