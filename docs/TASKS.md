@@ -26,9 +26,9 @@
 ---
 
 ## Phase 3: LangGraph Orchestration & Prompt Engineering
-- [ ] **TASK-3.1:** Author strict system prompts (`backend/app/core/prompts.py`) defining role, tone, refusal/escalation trigger tokens (`[[ESCALATE]]`), and 3 complete few-shot examples (in-scope RAG query, out-of-scope query, partial info query).
-- [ ] **TASK-3.2:** Define LangGraph `AgentState` TypedDict structure tracking `query`, `session_id`, `cache_hit`, `context_chunks`, `similarity_score`, `raw_response`, `escalated`, `escalation_reason`, `latency_ms`, and `token_metrics`.
-- [ ] **TASK-3.3:** Build discrete workflow nodes in `backend/app/services/graph_workflow.py`:
+- [x] **TASK-3.1:** Author strict system prompts (`backend/app/core/prompts.py`) defining role, tone, refusal/escalation trigger tokens (`[[ESCALATE]]`), and 3 complete few-shot examples (in-scope RAG query, out-of-scope query, partial info query).
+- [x] **TASK-3.2:** Define LangGraph `AgentState` TypedDict structure tracking `query`, `session_id`, `cache_hit`, `context_chunks`, `similarity_score`, `raw_response`, `escalated`, `escalation_reason`, `latency_ms`, and `token_metrics`.
+- [x] **TASK-3.3:** Build discrete workflow nodes in `backend/app/services/graph_workflow.py`:
   - `node_check_cache`: Semantic lookup.
   - `node_retrieve`: Similarity search over document vectors.
   - `node_relevance_gate`: Evaluates if maximum chunk similarity $\ge 0.70$.
@@ -36,7 +36,7 @@
   - `node_verify_grounding`: Detects hallucination or missing info flags.
   - `node_escalate`: Prepares structured human ticket payload.
   - `node_persist_and_telemetry`: Records execution trace to DB and cache.
-- [ ] **TASK-3.4:** Assemble StateGraph edges and compile the executable workflow graph.
+- [x] **TASK-3.4:** Assemble StateGraph edges and compile the executable workflow graph.
 
 ---
 
