@@ -272,6 +272,28 @@ Accepted.
 * **Pros:** Dramatically increases semantic cache hit rates across natural conversational paraphrases, ensures seamless Tier 3 human handover regardless of exact phrasing, and resolves academic grading/absence questions with zero tokens.
 * **Cons:** Cache threshold 0.74 must continue to be monitored against false-positive crossover across distinct academic programs.
 
+---
+
+## ADR-015: Monorepo Multi-Stage Docker Containerization and Production Railway Deployment
+
+### Context
+In a monorepo containing both `backend/` and `frontend/`, default cloud container builders (such as Railway Railpack or BuildKit) analyze the repository root (`./`). Without an explicit root `Dockerfile` and proper `.dockerignore`, dependency paths fail, and local database files or uncommitted knowledge base directories cause build failure (`"/data/raw": not found`). Furthermore, modern Python packaging tools (`uv`) require explicit virtual environment targeting (`VIRTUAL_ENV="/opt/venv"` and `--python /opt/venv/bin/python`) in non-root multi-stage containers.
+
+### Decision
+1. **Root Multi-Stage Production Dockerfile:** Maintain a dedicated root `Dockerfile` that specifies explicit paths relative to the monorepo root (`backend/requirements.txt`, `backend/app`, `backend/scripts`, `backend/data/raw`).
+2. **Explicit `.dockerignore` Configuration:** Exclude local sqlite files (`*.db`, `*.sqlite`, `*.sqlite3`), virtual environments, and caches, while explicitly guaranteeing that `backend/data/raw/*.md` is tracked and included.
+3. **Dedicated `VIRTUAL_ENV` Injection:** Declare `ENV VIRTUAL_ENV="/opt/venv"` and `ENV PATH="/opt/venv/bin:$PATH"`, invoking `uv pip install --no-cache --python /opt/venv/bin/python -r requirements.txt` to guarantee clean installation in unprivileged containers.
+4. **Declarative Railway Blueprint (`railway.toml`):** Configure `builder = "DOCKERFILE"` pointing to `Dockerfile`, with healthchecks at `/health`.
+5. **Background Process Orchestration (`run.sh`):** Launch the Telegram polling worker in the background alongside the Uvicorn ASGI server when `TELEGRAM_BOT_TOKEN` is present in production environment variables.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Guarantees predictable, fast, reproducible builds in any cloud container environment (Railway, Render, Fly.io, Kubernetes) without path ambiguity.
+* **Cons:** Dockerfile modifications at root must keep paths synchronized with any structural directory renames in `backend/`.
+
+
 
 
 
