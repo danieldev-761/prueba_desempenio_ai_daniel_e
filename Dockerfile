@@ -1,27 +1,45 @@
-# Multi-stage production Dockerfile for Colombian Language Academy Assistant Backend
-# Build Stage: Dependency Resolution & Environment Construction
-FROM python:3.11-slim AS builder
+# ======================================================================
+# Multi-stage Production Dockerfile: Unified Fullstack Container
+# Serves: React Frontend + FastAPI Backend + WebSockets + Telegram Bot
+# ======================================================================
 
+# ----------------------------------------------------------------------
+# Stage 1: Frontend Build (Node.js + pnpm)
+# ----------------------------------------------------------------------
+FROM node:20-slim AS frontend-builder
+WORKDIR /frontend
+
+# Enable corepack for pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy package descriptors and install dependencies
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Copy frontend source code and compile production bundle
+COPY frontend/ ./
+RUN pnpm build
+
+# ----------------------------------------------------------------------
+# Stage 2: Backend Dependencies (Python + uv)
+# ----------------------------------------------------------------------
+FROM python:3.11-slim AS backend-builder
 WORKDIR /build
 
-# Install uv for ultra-fast dependency resolution
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
-
-# Copy dependency specifications from backend directory
 COPY backend/requirements.txt ./requirements.txt
 
-# Install dependencies into dedicated virtual environment
 ENV VIRTUAL_ENV="/opt/venv"
 ENV PATH="/opt/venv/bin:$PATH"
 RUN uv venv /opt/venv && \
     uv pip install --no-cache --python /opt/venv/bin/python -r requirements.txt
 
 # ----------------------------------------------------------------------
-# Final Runtime Stage: Secure, Non-Root Container
+# Stage 3: Final Production Runtime Container
 # ----------------------------------------------------------------------
 FROM python:3.11-slim AS runtime
 
-# System runtime dependencies (curl for container healthchecks)
+# Runtime system utilities (curl for container healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -32,25 +50,28 @@ RUN groupadd -g 1001 appgroup && \
 
 WORKDIR /app
 
-# Copy virtual environment from builder stage
-COPY --from=builder /opt/venv /opt/venv
+# Copy Python virtual environment from Stage 2
+COPY --from=backend-builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy application source code, operational scripts, and raw markdown knowledge base
+# Copy backend application source code, operational scripts, and raw markdown knowledge base
 COPY --chown=appuser:appgroup backend/app /app/app
 COPY --chown=appuser:appgroup backend/scripts /app/scripts
 COPY --chown=appuser:appgroup backend/data/raw /app/data/raw
 
+# Copy compiled React frontend bundle from Stage 1 into /app/dist
+COPY --chown=appuser:appgroup --from=frontend-builder /frontend/dist /app/dist
+
 # Prepare persistent data directory with proper ownership
 RUN mkdir -p /app/data/chroma_db && chown -R appuser:appgroup /app/data /app
 
-# Ensure shell scripts have execution rights
+# Ensure operational scripts have execution rights
 RUN chmod +x /app/scripts/run.sh || true
 
 # Switch to unprivileged non-root user
 USER appuser
 
-# Expose FastAPI service port
+# Expose default HTTP service port
 EXPOSE 8000
 
 # Environment defaults
@@ -65,5 +86,5 @@ ENV PORT=8000 \
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Default container entrypoint
+# Default container entrypoint (launches Telegram worker in background if token set + FastAPI)
 CMD ["/bin/bash", "/app/scripts/run.sh"]
