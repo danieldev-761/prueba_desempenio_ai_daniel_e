@@ -11,9 +11,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 COPY backend/requirements.txt ./requirements.txt
 
 # Install dependencies into dedicated virtual environment
-ENV UV_PROJECT_ENVIRONMENT="/opt/venv"
+ENV VIRTUAL_ENV="/opt/venv"
+ENV PATH="/opt/venv/bin:$PATH"
 RUN uv venv /opt/venv && \
-    uv pip install --no-cache -r requirements.txt
+    uv pip install --no-cache --python /opt/venv/bin/python -r requirements.txt
 
 # ----------------------------------------------------------------------
 # Final Runtime Stage: Secure, Non-Root Container
