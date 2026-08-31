@@ -33,3 +33,7 @@ dist/
 # Logs & temp
 *.log
 .DS_Store
+
+# Temporary reference directories
+backend_inspiracion/
+frontend_inspiracion/
