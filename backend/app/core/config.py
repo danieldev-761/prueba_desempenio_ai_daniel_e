@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     CHROMA_PERSIST_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "data" / "chroma_db")
     ACADEMY_COLLECTION_NAME: str = "academy_docs"
     CACHE_COLLECTION_NAME: str = "semantic_cache"
-    CACHE_SIMILARITY_THRESHOLD: float = 0.82  # Cosine similarity >= 0.82 (Distance <= 0.18)
+    CACHE_SIMILARITY_THRESHOLD: float = 0.74  # Cosine similarity >= 0.74 (Distance <= 0.26)
     RETRIEVAL_SIMILARITY_THRESHOLD: float = 0.45
 
     # Relational Database / Telemetry

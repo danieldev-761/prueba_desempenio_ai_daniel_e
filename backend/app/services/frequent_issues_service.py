@@ -41,11 +41,17 @@ PERSISTENCE_PATTERNS = [
 
 # Patterns indicating self-service is fully exhausted and human escalation is required
 EXHAUSTION_PATTERNS = [
-    re.compile(r"no\s+pude\s+solucionar", re.IGNORECASE),
-    re.compile(r"no\s+me\s+sirvi[oó]", re.IGNORECASE),
-    re.compile(r"no\s+funcion[oó]", re.IGNORECASE),
-    re.compile(r"ya\s+intent[eé]\s+todo", re.IGNORECASE),
-    re.compile(r"ya\s+hice\s+todo", re.IGNORECASE),
+    re.compile(r"no\s+pude(\s+solucionar)?", re.IGNORECASE),
+    re.compile(r"no\s+me\s+sirvi[oó](\s+nada)?", re.IGNORECASE),
+    re.compile(r"no\s+me\s+funcion[oó](\s+nada|\s+ninguna)?", re.IGNORECASE),
+    re.compile(r"no\s+(se\s+pudo|se\s+solucion[oó]|se\s+arregl[oó])", re.IGNORECASE),
+    re.compile(r"sigue\s+igual", re.IGNORECASE),
+    re.compile(r"a[uú]n\s+as[ií]\s+no", re.IGNORECASE),
+    re.compile(r"todav[ií]a\s+no(\s+pasa|\s+deja|\s+funciona)?", re.IGNORECASE),
+    re.compile(r"no\s+se\s+arregl[oó]", re.IGNORECASE),
+    re.compile(r"no\s+se\s+solucion[oó]", re.IGNORECASE),
+    re.compile(r"no\s+me\s+deja", re.IGNORECASE),
+    re.compile(r"ya\s+(intent[eé]|prob[eé]|hice|revis[eé])\s+(todo|eso|nada|y\s+nada|y\s+sigue)", re.IGNORECASE),
     re.compile(r"quiero\s+hablar\s+con\s+un\s+asesor", re.IGNORECASE),
     re.compile(r"comunicar.*(asesor|persona|humano)", re.IGNORECASE),
     re.compile(r"pasame.*(asesor|persona|humano)", re.IGNORECASE),
@@ -123,25 +129,28 @@ class FrequentIssuesService:
         prev_state = self._session_state.get(sess_key)
 
         # --- STEP 1: CHECK FOR TIER 3 EXHAUSTION (Gated Escalation) ---
+        # Tier 3 is strictly gated: only triggered when the user has ALREADY undergone Tier 2 diagnostics!
+        is_direct_negative = (
+            prev_state is not None
+            and prev_state.get("tier", 0) >= 2
+            and norm_query in ["no", "tampoco", "para nada", "nada", "no pude", "sigue igual", "todavia no", "sigo igual", "no sirvio", "no funciono"]
+        )
         is_exhaustion = any(p.search(query) or p.search(norm_query) for p in EXHAUSTION_PATTERNS)
-        if is_exhaustion:
-            # If the student previously underwent Tier 1 or Tier 2 troubleshooting:
-            if prev_state and prev_state.get("tier", 0) >= 1:
-                logger.info(f"Triage Funnel TIER 3 TRIGGERED for session '{sess_key}': self-service exhausted.")
-                cat = prev_state.get("last_category", "general")
-                # Clear session state on escalation
-                self._session_state[sess_key] = {"last_category": cat, "tier": 3}
-                return {
-                    "category": cat,
-                    "title": "Transferencia a Asesor Académico",
-                    "response": (
-                        "Entendemos que has realizado las comprobaciones técnicas y el inconveniente continúa. "
-                        "Para brindarte una solución definitiva, transferiremos tu caso de inmediato con un **Asesor Académico** de nuestro equipo. [[ESCALATE]]"
-                    ),
-                    "matched_rule": "exhaustion_gate",
-                    "tier": 3,
-                    "is_escalate": True,
-                }
+        if (is_direct_negative or is_exhaustion) and prev_state and prev_state.get("tier", 0) >= 2:
+            logger.info(f"Triage Funnel TIER 3 TRIGGERED for session '{sess_key}': self-service exhausted.")
+            cat = prev_state.get("last_category", "general")
+            self._session_state[sess_key] = {"last_category": cat, "tier": 3}
+            return {
+                "category": cat,
+                "title": "Transferencia a Asesor Académico",
+                "response": (
+                    "Entendemos que has realizado las comprobaciones técnicas y el inconveniente continúa. "
+                    "Para brindarte una solución definitiva, transferiremos tu caso de inmediato con un **Asesor Académico** de nuestro equipo. [[ESCALATE]]"
+                ),
+                "matched_rule": "exhaustion_gate",
+                "tier": 3,
+                "is_escalate": True,
+            }
 
         # --- STEP 2: CHECK FOR CATEGORY MATCH IN FREQUENT ISSUES ---
         matched_rule = None

@@ -13,7 +13,7 @@ def cache_test_env():
         persist_directory=temp_dir,
         collection_name="test_unit_semantic_cache",
         embeddings=mock_embeddings,
-        similarity_threshold=0.82,
+        similarity_threshold=0.74,
     )
     yield service
     shutil.rmtree(temp_dir, ignore_errors=True)
@@ -39,8 +39,15 @@ def test_cache_store_and_hit(cache_test_env):
     hit = service.lookup(query)
     assert hit is not None
     assert hit["response"] == response
-    assert hit["similarity_score"] >= 0.82
+    assert hit["similarity_score"] >= 0.74
     assert len(hit["sources"]) == 1
+
+    # Normalized paraphrase query hit
+    paraphrase = "cuanto cuesta el curso intensivo de ingles"
+    hit_para = service.lookup(paraphrase)
+    assert hit_para is not None
+    assert hit_para["response"] == response
+    assert hit_para["similarity_score"] >= 0.74
 
 
 def test_cache_clear(cache_test_env):

@@ -176,5 +176,37 @@
     ],
     "response_tier1": "🌍 **Preparación para Exámenes Internacionales (Nivel 1):**\n\n1. **Programa preparatorio:** Módulo intensivo de 40 horas académicas con simulacros de pruebas computarizadas y técnicas de examen.\n2. **Inversión:** $780.000 COP por módulo (incluye acceso a simuladores y bancos de preguntas).\n3. **Requisito:** Nivel de dominio mínimo de B1/B2 certificado o validado en nuestro placement test.\n4. **Prueba oficial:** Somos centro de preparación autorizado; la presentación oficial se realiza en los centros examinadores autorizados (British Council, ETS, Alianza Francesa, Goethe-Institut).",
     "response_tier2": "🔍 **Asesoría Especializada en Certificación Internacional (Nivel 2):**\n\nSi tienes dudas sobre qué prueba tomar o fechas límite:\n\n1. **IELTS vs TOEFL:** Si tu objetivo es migración a Canadá/Australia o UK, recomendamos IELTS General/Academic. Para becas y postgrados en EE.UU., recomendamos TOEFL iBT.\n2. **Diagnóstico previo:** Antes de invertir en el curso preparatorio, te aplicamos un simulador diagnóstico corto de 30 minutos sin costo para verificar tu banda actual.\n3. **Atención con Asesor:** Si necesitas un plan de estudio acelerado de menos de 4 semanas o cotización para grupo corporativo, indícanos 'No pude solucionar' para que un Asesor Académico coordine tu itinerario."
+  },
+  {
+    "id": "perdida_modulo_inasistencias",
+    "title": "Políticas de Pérdida de Módulo, Habilitaciones e Inasistencias",
+    "keywords": [
+      "perdi el modulo",
+      "perdi el nivel",
+      "reprobe",
+      "reprobar el curso",
+      "reprobe el modulo",
+      "que pasa si pierdo el modulo",
+      "que pasa si pierdo un nivel",
+      "perdi por inasistencia",
+      "muchas inasistencias",
+      "cuantas faltas puedo tener",
+      "limite de fallas",
+      "recuperar modulo",
+      "repetir nivel",
+      "examen de habilitacion",
+      "habilitar modulo"
+    ],
+    "patterns": [
+      "perd[ií].*(m[oó]dulo|nivel|curso|semestre)",
+      "reprob[eé]",
+      "qu[eé]\\s+pasa\\s+si\\s+pierdo",
+      "habilitar.*(m[oó]dulo|nivel|materia)",
+      "(l[ií]mite|cu[aá]ntas).*(faltas|fallas|inasistencias)",
+      "repetir.*(m[oó]dulo|nivel|curso)"
+    ],
+    "response_tier1": "📊 **Políticas Oficiales de Aprobación, Inasistencias y Repetición (Nivel 1):**\n\n1. **Criterios de aprobación:** Para certificar y aprobar un módulo o nivel debes obtener una calificación final mínima de **3.8/5.0** y cumplir con una asistencia mínima del **80%** de las horas de clase programadas.\n2. **Límite de inasistencias:** Puedes faltar a un máximo del **20%** de las clases (por ejemplo, en el curso intensivo de 40 horas al mes, el límite es de 8 horas acumuladas). Si superas este límite, el módulo se reprueba por inasistencia.\n3. **Grabaciones y Reposición:** Todas las sesiones virtuales quedan grabadas por 30 días en el aula virtual para que te pongas al día con las temáticas vistas.\n4. **Talleres de refuerzo gratuitos:** La Academia ofrece monitorías y talleres de refuerzo gramatical los viernes sin costo adicional para nivelarte antes de los exámenes finales.",
+    "response_tier2": "🔍 **Alternativas Académicas para Módulos Reprobados y Casos de Inasistencia (Nivel 2):**\n\nEntendemos tu preocupación al no alcanzar la nota o al haber tenido dificultades de asistencia. Disponemos de las siguientes alternativas reglamentarias:\n\n1. **Examen de Habilitación Única:** Si tu nota final estuvo entre **3.0 y 3.7**, tienes derecho a presentar una prueba de habilitación dentro de los 5 días hábiles siguientes al cierre del módulo. Su costo administrativo es de $60.000 COP y se aprueba con nota mínima de 3.8.\n2. **Repetición con Descuento del 50%:** Si tu calificación fue menor a 3.0 o perdiste el módulo por inasistencia ($> 20\\%\\$), el reglamento te permite repetir el módulo cursándolo nuevamente con una **tarifa preferencial del 50% de descuento** sobre la matrícula regular.\n3. **Justificación Médica Extemporánea:** Si tus inasistencias fueron por hospitalización o motivo de salud mayor debidamente soportado por EPS, puedes radicar tu incapacidad en Secretaría Académica para anular la penalidad de inasistencia.\n\n*Si tu caso presenta una circunstancia de fuerza mayor no contemplada en el reglamento, indícanos 'No pude solucionar' para remitir tu caso a Coordinación Académica.*"
   }
 ]
+

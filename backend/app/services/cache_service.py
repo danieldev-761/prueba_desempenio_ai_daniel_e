@@ -11,11 +11,27 @@ from app.core.logging import logger
 from app.services.llm_factory import get_embeddings_model
 
 
+import re
+import unicodedata
+
+def normalize_cache_key(text: str) -> str:
+    """
+    Normalizes Spanish query text for optimal semantic cache comparison.
+    Strips diacritics, punctuation, question marks, and excessive whitespace.
+    """
+    if not text:
+        return ""
+    nfkd = unicodedata.normalize("NFKD", text)
+    without_accents = "".join([c for c in nfkd if not unicodedata.combining(c)])
+    cleaned = re.sub(r"[^a-zA-Z0-9\s]", " ", without_accents).lower()
+    return " ".join(cleaned.split())
+
+
 class SemanticCacheService:
     """
     Semantic Cache for frequently asked language academy questions.
     Uses ChromaDB cosine distance metric.
-    Hit Criteria: cosine distance <= (1 - CACHE_SIMILARITY_THRESHOLD) (e.g. <= 0.18 for >= 82% similarity)
+    Hit Criteria: cosine similarity >= CACHE_SIMILARITY_THRESHOLD (default 0.74, max_distance <= 0.26)
     """
 
     def __init__(
@@ -63,15 +79,15 @@ class SemanticCacheService:
             return None
 
         try:
+            norm_q = normalize_cache_key(query)
             # Query vector store for nearest match with raw cosine distance
-            results = self._vector_store.similarity_search_with_score(query, k=1)
+            results = self._vector_store.similarity_search_with_score(norm_q, k=1)
             if not results:
                 return None
 
             doc, distance = results[0]
             # Robust similarity calculation:
             # In cosine space: distance = 1 - cosine_sim -> sim = 1 - distance
-            # If collection defaults to L2 on normalized vectors: L2^2 = 2 * (1 - cosine) -> sim = 1 - dist/2
             dist_val = float(distance)
             col_space = (self.collection.metadata or {}).get("hnsw:space", "cosine")
             if col_space == "cosine":
@@ -89,7 +105,7 @@ class SemanticCacheService:
                     f"Semantic Cache HIT for '{query[:40]}...' (Similarity: {calculated_similarity:.4f} >= {self.similarity_threshold})"
                 )
                 return {
-                    "query": doc.page_content,
+                    "query": metadata.get("original_query", doc.page_content),
                     "response": cached_response,
                     "similarity_score": round(calculated_similarity, 4),
                     "sources": sources,
@@ -115,14 +131,16 @@ class SemanticCacheService:
         """
         try:
             now_iso = datetime.now(timezone.utc).isoformat()
+            norm_q = normalize_cache_key(query)
             metadata = {
+                "original_query": query.strip(),
                 "response": response,
                 "sources_json": json.dumps(sources or []),
                 "cached_at": now_iso,
             }
-            doc = Document(page_content=query.strip(), metadata=metadata)
+            doc = Document(page_content=norm_q, metadata=metadata)
             self._vector_store.add_documents([doc])
-            logger.info(f"Cached response for query: '{query[:40]}...'")
+            logger.info(f"Cached response for query: '{query[:40]}...' (normalized: '{norm_q[:40]}...')")
         except Exception as e:
             logger.error(f"Failed to store entry in semantic cache: {e}")
 

@@ -253,6 +253,26 @@ Accepted.
 * **Pros:** Minimizes advisor saturation, guarantees thorough self-service troubleshooting across all operational domains, provides empathetic progressive support without token consumption, and ensures equitable review collection across all communication channels.
 * **Cons:** Requires client-side timer management and state tracking per session.
 
+---
+
+## ADR-014: Semantic Cache Normalization, Exhaustion Variants, and Academic Absence Containment
+
+### Context
+Rigid cosine similarity thresholds (0.82) on high-dimensional (3072) dense vectors caused false cache misses when students phrased identical questions with minor syntactic variations, regional phrasing (e.g. "cuáles son las sedes" vs "cuáles son las sedes de la academia"), or minor typos. Furthermore, the Tier 3 triage exhaustion check failed when students expressed failure using colloquial Spanish expressions beyond the exact string "No pude solucionar". Finally, inquiries regarding failed academic modules and attendance limits represented a frequent student concern lacking deterministic containment.
+
+### Decision
+1. **Semantic Cache Optimization:** Implement pre-embedding text normalization (`normalize_cache_key`) stripping diacritics, punctuation, and extra whitespace, and calibrate the cache cosine similarity threshold to `0.74` (`max_distance = 0.26`).
+2. **Exhaustion Pattern Expansion:** Expand `EXHAUSTION_PATTERNS` to cover all natural Spanish expressions of failure ("sigue igual", "no me sirvió", "no me funcionó", "ya intenté todo y nada", "no pude", "todavía no") and treat short negative affirmations in Tier 2 as immediate Tier 3 triggers.
+3. **9th Deterministic Category (`perdida_modulo_inasistencias`):** Establish a 3-tier containment workflow for module failure (<3.8 GPA), 20% attendance caps, single habilitación exams ($60.000 COP), and 50% discount module repetition policies.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Dramatically increases semantic cache hit rates across natural conversational paraphrases, ensures seamless Tier 3 human handover regardless of exact phrasing, and resolves academic grading/absence questions with zero tokens.
+* **Cons:** Cache threshold 0.74 must continue to be monitored against false-positive crossover across distinct academic programs.
+
+
 
 
 
