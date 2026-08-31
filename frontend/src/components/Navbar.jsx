@@ -24,16 +24,21 @@ export default function Navbar({ onOpenAdminModal, onOpenContactModal, onOpenEsc
         {/* Action Channels */}
         <div className="flex items-center gap-3">
           {/* Telegram Channel Button */}
-          <a
-            href="https://t.me/AcademiaIdiomasCol_bot"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-200 bg-blue-950/60 border border-blue-800/80 rounded-lg hover:bg-blue-900/80 hover:text-white transition-colors duration-200 cursor-pointer"
-          >
-            <Send className="w-3.5 h-3.5 text-sky-400" />
-            <span>@AcademiaIdiomasCol_bot</span>
-            <ExternalLink className="w-3 h-3 text-slate-400" />
-          </a>
+          {(() => {
+            const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'CL_Academy_bot';
+            return (
+              <a
+                href={`https://t.me/${botName}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-200 bg-blue-950/60 border border-blue-800/80 rounded-lg hover:bg-blue-900/80 hover:text-white transition-colors duration-200 cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5 text-sky-400" />
+                <span>@{botName}</span>
+                <ExternalLink className="w-3 h-3 text-slate-400" />
+              </a>
+            );
+          })()}
 
           {/* Live Human Advisor Button */}
           <button

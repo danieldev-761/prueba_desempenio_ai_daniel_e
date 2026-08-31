@@ -17,7 +17,7 @@ An enterprise-grade, zero-hallucination **Colombian Language Academy Intelligent
 graph TD
     subgraph "Client Intake Layer (Multi-Channel)"
         WebClient["Web UI (React + Tailwind)"] -->|"POST /api/v1/chat"| FastAPIGateway
-        TelegramClient["Telegram App (@AcademiaIdiomasCol_bot)"] -->|"Long-Polling / Webhook"| TelegramWorker["Telegram Service Worker"]
+        TelegramClient["Telegram App (@CL_Academy_bot)"] -->|"Long-Polling / Webhook"| TelegramWorker["Telegram Service Worker"]
         TelegramWorker --> FastAPIGateway["FastAPI Gateway (/api/v1)"]
         WebhookClient["Student Contact Webhook Form"] -->|"POST /api/v1/chat (channel=webhook)"| FastAPIGateway
     end
