@@ -9,13 +9,8 @@ from app.schemas.metrics import MetricsSummary, TokensConsumed
 router = APIRouter(tags=["Metrics"])
 
 
-async def verify_admin_key(x_admin_key: str = Header(..., alias="X-Admin-Key")):
-    if x_admin_key != settings.ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing Administrator Key (X-Admin-Key).",
-        )
-    return x_admin_key
+from app.api.v1.endpoints.auth import get_current_admin
+from app.models.admin_user import AdminUser
 
 
 @router.get(
@@ -26,7 +21,7 @@ async def verify_admin_key(x_admin_key: str = Header(..., alias="X-Admin-Key")):
 )
 async def get_metrics(
     db: AsyncSession = Depends(get_db_session),
-    _admin_auth: str = Depends(verify_admin_key),
+    _admin_user: AdminUser = Depends(get_current_admin),
 ):
     # Total count
     total_q = await db.scalar(select(func.count(TelemetryLog.id))) or 0

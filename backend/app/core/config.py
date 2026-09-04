@@ -25,8 +25,12 @@ class Settings(BaseSettings):
     # Google Gemini Settings (Primary Provider)
     GOOGLE_API_KEY: str = Field(default="", description="Google API Key alias")
     GEMINI_API_KEY: str = Field(default="", description="Google Gemini API Key")
-    GEMINI_CHAT_MODEL: str = "gemini-3.1-flash-lite"
+    GEMINI_CHAT_MODEL: str = "gemini-2.5-flash"
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
+
+    # Groq Settings
+    GROQ_API_KEY: str = Field(default="", description="Groq API Key")
+    GROQ_CHAT_MODEL: str = "llama-3.3-70b-versatile"
 
     # Vector Database & Caching
     CHROMA_PERSIST_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "data" / "chroma_db")
@@ -40,6 +44,8 @@ class Settings(BaseSettings):
 
     # Security & Admin Access
     ADMIN_API_KEY: str = Field(default="admin123", description="Secret key required to access /metrics and admin dashboard")
+    JWT_SECRET: str = Field(default="vanguard-secret-key-32-chars-long-2026", description="JWT Signing Secret Key")
+
 
     # Telegram Integration
     TELEGRAM_BOT_TOKEN: str = Field(default="", description="Telegram Bot token")

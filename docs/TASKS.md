@@ -87,3 +87,13 @@
 - [x] **TASK-7.3:** Validate hallucination refusal rate ($\ge 90\%$) and latency SLA ($< 2.5s$).
 - [x] **TASK-7.4:** Write deployment runbook and update technical documentation `README.md` in English with architecture diagram, local setup instructions, Docker commands, API documentation, and test execution.
 - [x] **TASK-7.5:** Package deliverable into clean `.zip` archive complying with all criteria.
+
+---
+
+## Phase 8: Dynamic LLM Routing, JWT Security, Conversation History & Vanguard UI/UX Revamp
+- [x] **TASK-8.1:** Implement dynamic runtime LLM and API key switching supporting Groq LPU (`llama-3.3-70b-versatile`), Google Gemini (`gemini-2.5-flash`), and OpenAI (`gpt-4o-mini`) in `backend/app/services/llm_factory.py`.
+- [x] **TASK-8.2:** Replace plain-text environment variable admin comparison with an encrypted `admin_users` SQLite table (`bcrypt` hashed passwords) and JWT Bearer token sessions (`backend/app/core/security.py`, `backend/app/api/v1/endpoints/auth.py`).
+- [x] **TASK-8.3:** Implement visitor conversation persistence models (`ChatSessionRecord` and `ChatMessageRecord`) with management endpoints (`/api/v1/conversations`).
+- [x] **TASK-8.4:** Fix long-running Telegram bot stability in Railway container deployments with client recycling, exponential backoff, and a self-healing supervisor loop in `backend/scripts/run.sh`.
+- [x] **TASK-8.5:** Redesign frontend UI with WebGL Three.js Hero particle cursor (`GhostCursor.jsx`), rich Vanguard institutional landing page (`LandingPage.jsx`), Perplexity-style AI assistant (`VanguardAssistant.jsx`), and dedicated Admin Management Portal (`AdminPortal.jsx`).
+- [x] **TASK-8.6:** Write automated integration and resilience tests (`backend/tests/integration/test_auth_and_settings.py`, `backend/tests/unit/test_telegram_resilience.py`), verifying 100% pass rate (44/44 tests).

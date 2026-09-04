@@ -1,0 +1,23 @@
+# Changelog: 04-09-2026
+
+- Viernes-04/09/2026-09:15 : Actualización de dependencias en `backend/requirements.txt` agregando `langchain-groq`, `groq`, `pyjwt`, `bcrypt` e instalación en el entorno virtual.
+- Viernes-04/09/2026-09:25 : Creación del modelo relacional SQLite `AdminUser` y `SystemSetting` en `backend/app/models/admin_user.py` para administración segura y almacenamiento dinámico de llaves y proveedores LLM.
+- Viernes-04/09/2026-09:35 : Creación del modelo relacional `ChatSessionRecord` y `ChatMessageRecord` en `backend/app/models/conversation.py` para persistencia completa de conversaciones de visitantes.
+- Viernes-04/09/2026-09:45 : Implementación del módulo de seguridad `backend/app/core/security.py` con hashing bcrypt y generación/validación de tokens JWT Bearer.
+- Viernes-04/09/2026-09:55 : Extensión de la configuración `backend/app/core/config.py` con variables para Groq API (`GROQ_API_KEY`, `GROQ_CHAT_MODEL`) y `JWT_SECRET`.
+- Viernes-04/09/2026-10:05 : Actualización de inicialización de base de datos en `backend/app/db/session.py` con auto-seeding de usuario admin por defecto (`admin` / `admin12345`) y ajustes de proveedor iniciales.
+- Viernes-04/09/2026-10:15 : Refactorización de `backend/app/services/llm_factory.py` con soporte para proveedor Groq (`llama-3.3-70b-versatile`), Google Gemini (`gemini-2.5-flash`), OpenAI (`gpt-4o-mini`) y conmutación dinámica en tiempo de ejecución (`set_runtime_llm_config`).
+- Viernes-04/09/2026-10:25 : Creación de endpoints de autenticación JWT `/api/v1/auth/login` y `/api/v1/auth/me` con dependencia de seguridad `get_current_admin` en `backend/app/api/v1/endpoints/auth.py`.
+- Viernes-04/09/2026-10:35 : Creación de endpoints de administración de proveedores `/api/v1/settings/providers` (GET/POST) en `backend/app/api/v1/endpoints/settings.py`.
+- Viernes-04/09/2026-10:40 : Creación de endpoints de historial de conversaciones `/api/v1/conversations` y `/api/v1/conversations/{session_id}` en `backend/app/api/v1/endpoints/conversations.py`.
+- Viernes-04/09/2026-10:45 : Actualización de `backend/app/api/v1/endpoints/chat.py` para registrar de manera automática e incremental todas las sesiones y mensajes intercambiados.
+- Viernes-04/09/2026-10:50 : Corrección de resiliencia en `backend/scripts/telegram_worker.py` con reintentos exponenciales, reciclaje de cliente HTTP en errores de red/409/429 y bucle supervisor en `backend/scripts/run.sh`.
+- Viernes-04/09/2026-10:55 : Adición de suite de pruebas integradas y unitarias `backend/tests/integration/test_auth_and_settings.py` y `backend/tests/unit/test_telegram_resilience.py` (44 tests superados al 100%).
+- Viernes-04/09/2026-11:00 : Instalación de paquetes `three` y `react-icons` en `frontend/package.json` y configuración tipográfica/paleta Vanguard en `frontend/tailwind.config.js` e `index.html`.
+- Viernes-04/09/2026-11:05 : Implementación de métodos en `frontend/src/services/api.js` para autenticación JWT, gestión de proveedores y lectura de conversaciones.
+- Viernes-04/09/2026-11:10 : Creación de componente interactivo WebGL `frontend/src/components/GhostCursor.jsx` con estela de partículas para el Hero.
+- Viernes-04/09/2026-11:15 : Creación de la nueva Landing Page institucional `frontend/src/components/LandingPage.jsx` con estética editorial, programas, sedes Bogotá/Medellín, precios COP y sin botón de contacto con asesor humano.
+- Viernes-04/09/2026-11:20 : Creación de la interfaz conversacional estilo Perplexity `frontend/src/components/VanguardAssistant.jsx` con fuentes citadas, badges de verificación, historial y chips de búsqueda.
+- Viernes-04/09/2026-11:25 : Rediseño completo del Panel de Administración `frontend/src/components/AdminPortal.jsx` con métricas KPI en tiempo real, conmutador de llaves/modelos LLM e inspector de conversaciones.
+- Viernes-04/09/2026-11:30 : Conexión de vistas en `frontend/src/App.jsx` con enrutamiento dinámico por estado y hash (`#chat`, `#admin`, `#landing`) y generación de build de producción en `frontend/dist`.
+- Viernes-04/09/2026-11:45 : Actualización exhaustiva de especificaciones técnicas: `docs/DATABASE.md` (entidades admin y chat history), `docs/API.md` (endpoints de auth, settings y conversaciones), `docs/ADR.md` (ADR-016), `docs/TASKS.md` (Fase 8), `README.md` y creación del documento de fase `documentation/tech-doc-f9.md`.

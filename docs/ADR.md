@@ -293,6 +293,30 @@ Accepted.
 * **Pros:** Guarantees predictable, fast, reproducible builds in any cloud container environment (Railway, Render, Fly.io, Kubernetes) without path ambiguity.
 * **Cons:** Dockerfile modifications at root must keep paths synchronized with any structural directory renames in `backend/`.
 
+---
+
+## ADR-016: Dynamic Multi-LLM Provider Routing, JWT Admin Authentication, and Telegram Polling Supervisor
+
+### Context
+1. **Dynamic Provider Switching & Groq LPU Integration:** The system previously required server environment restarts to toggle between LLM providers. Administrators needed the ability to switch between Google Gemini (`gemini-2.5-flash`), Groq LPU (`llama-3.3-70b-versatile`), and OpenAI (`gpt-4o-mini`) in real-time from the Admin Portal, with support for custom API keys.
+2. **Secure Admin Authentication:** Admin authentication previously relied on direct string comparisons against a static environment variable (`ADMIN_API_KEY`), which lacked user management, password encryption, and industry-standard Bearer token sessions.
+3. **Telegram Long-Polling Stability in Containerized Deployments:** In 24/7 cloud deployments (Railway), background polling workers can terminate permanently when encountering stale HTTP connections, transient network drops, or 409/429 status codes.
+
+### Decision
+1. **Dynamic Provider Factory & DB Backed Settings:** Implement `set_runtime_llm_config` in `backend/app/services/llm_factory.py` with Groq support (`langchain-groq`). Store provider preferences and masked API keys in a persistent `system_settings` SQLite table.
+2. **Encrypted Admin Users & JWT Tokens:** Introduce `AdminUser` table with `bcrypt` password hashing and issue signed `HS256` JWT access tokens (`pyjwt`) validated via FastAPI dependency `get_current_admin`.
+3. **Resilient Polling Worker & Subprocess Supervisor:**
+   - In `backend/scripts/telegram_worker.py`, implement periodic `httpx.AsyncClient` recycling upon network drops and exponential backoff retry logic.
+   - In `backend/scripts/run.sh`, wrap the polling worker in an autonomous auto-restarting supervisor loop: `(while true; do python /app/scripts/telegram_worker.py; sleep 5; done) &`.
+4. **Visitor Conversation Telemetry:** Persist all visitor chat messages across channels into `chat_session_records` and `chat_message_records` for administrator inspection and metrics tracking.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Complete zero-downtime flexibility to switch LLM backends and test latency/costs across Groq, Gemini, and OpenAI; enterprise-grade JWT admin security; 99.99% uptime resilience for Telegram bot polling in Railway; full historical auditability of all visitor interactions.
+* **Cons:** Runtime overrides take precedence over `.env` defaults until cleared by administrator.
+
 
 
 

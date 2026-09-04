@@ -1,974 +1,523 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Shield,
-  Activity,
-  Users,
-  Send,
-  MessageSquare,
-  DollarSign,
-  Zap,
-  TrendingUp,
-  Clock,
-  Circle,
-  RefreshCw,
-  LogOut,
-  ChevronRight,
-  ChevronDown,
-  ExternalLink,
-  CheckCircle2,
-  AlertTriangle,
-  Star,
-  UserCheck,
-  Award,
-  Layers,
-  HeartHandshake
-} from 'lucide-react';
-import {
-  getAdminMetrics,
-  getEscalatedSessions,
-  getSessionMessages,
-  replyTelegramStudent,
-  closeEscalationSession,
-  getWebSocketChatUrl,
-  getCRMProfiles,
-  getCRMReviews,
-  getCRMSummary,
+import React, { useState, useEffect } from 'react';
+import { 
+  FaShieldAlt, FaChartBar, FaKey, FaComments, FaSignOutAlt, 
+  FaSync, FaCheckCircle, FaExclamationTriangle, FaClock, 
+  FaDollarSign, FaBolt, FaLayerGroup, FaEye, FaLock, FaUser,
+  FaGoogle, FaRobot
+} from 'react-icons/fa';
+import { 
+  adminLogin, getAdminMetrics, getProviderSettings, 
+  updateProviderSettings, getVisitorConversations, 
+  getVisitorConversationTranscript 
 } from '../services/api';
 
-export default function AdminPortal({ adminKey, onLogout }) {
-  const [activeTab, setActiveTab] = useState('escalation'); // 'escalation' | 'metrics'
-  const [metricsSubTab, setMetricsSubTab] = useState('rag'); // 'rag' | 'crm'
+export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
+  const [token, setToken] = useState(() => localStorage.getItem('vanguard_admin_jwt') || '');
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('vanguard_admin_user');
+    return saved ? JSON.parse(saved) : null;
+  });
 
-  const [sessions, setSessions] = useState([]);
-  const [selectedSessionId, setSelectedSessionId] = useState(null);
-  const [sessionMessages, setSessionMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [telegramReplyText, setTelegramReplyText] = useState('');
+  // Login form state
+  const [loginUsername, setLoginUsername] = useState('admin');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Active portal tab: 'metrics' | 'conversations' | 'settings'
+  const [activeTab, setActiveTab] = useState('metrics');
+
+  // Metrics state
   const [metrics, setMetrics] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [telegramStatus, setTelegramStatus] = useState('');
+  const [metricsLoading, setMetricsLoading] = useState(false);
 
-  // Collapsible state for resolved sessions
-  const [isResolvedExpanded, setIsResolvedExpanded] = useState(false);
+  // Conversations state
+  const [conversations, setConversations] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [transcript, setTranscript] = useState([]);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
 
-  // CRM Data State
-  const [crmProfiles, setCrmProfiles] = useState([]);
-  const [crmReviews, setCrmReviews] = useState([]);
-  const [crmSummary, setCrmSummary] = useState(null);
-  const [loadingCrm, setLoadingCrm] = useState(false);
+  // Provider settings state
+  const [providerSettings, setProviderSettings] = useState(null);
+  const [activeProvider, setActiveProvider] = useState('gemini');
+  const [geminiKeyInput, setGeminiKeyInput] = useState('');
+  const [groqKeyInput, setGroqKeyInput] = useState('');
+  const [openaiKeyInput, setOpenaiKeyInput] = useState('');
+  const [settingsFeedback, setSettingsFeedback] = useState({ type: '', text: '' });
+  const [savingSettings, setSavingSettings] = useState(false);
 
-  // Confirmation modal state for closing session
-  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const [closeError, setCloseError] = useState('');
-
-  const wsRef = useRef(null);
-  const chatBottomRef = useRef(null);
-
-  // Fetch initial sessions & metrics
-  const fetchData = async () => {
-    setLoading(true);
+  // Handle Login
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
     try {
-      const [sessionsData, metricsData] = await Promise.all([
-        getEscalatedSessions(adminKey).catch(() => []),
-        getAdminMetrics(adminKey).catch(() => null),
-      ]);
-      setSessions(sessionsData);
-      setMetrics(metricsData);
+      const data = await adminLogin(loginUsername, loginPassword);
+      setToken(data.access_token);
+      setCurrentUser(data.user);
+      localStorage.setItem('vanguard_admin_jwt', data.access_token);
+      localStorage.setItem('vanguard_admin_user', JSON.stringify(data.user));
+    } catch (err) {
+      setLoginError(err.message || 'Error al iniciar sesión');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
-      // Stable session selection: only select initial session if none chosen
-      if (sessionsData.length > 0) {
-        setSelectedSessionId((prevId) => {
-          if (!prevId) {
-            return sessionsData[0].session_id;
-          }
-          // If previous session exists in current list, retain it
-          const exists = sessionsData.some((s) => s.session_id === prevId);
-          return exists ? prevId : sessionsData[0].session_id;
-        });
+  const handleLogout = () => {
+    setToken('');
+    setCurrentUser(null);
+    localStorage.removeItem('vanguard_admin_jwt');
+    localStorage.removeItem('vanguard_admin_user');
+  };
+
+  // Load metrics
+  const fetchMetrics = async () => {
+    if (!token) return;
+    setMetricsLoading(true);
+    try {
+      const data = await getAdminMetrics(token);
+      setMetrics(data);
+    } catch (err) {
+      if (err.message.includes('No autorizado')) {
+        handleLogout();
+      }
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
+
+  // Load conversations
+  const fetchConversations = async () => {
+    try {
+      const data = await getVisitorConversations(50, 0);
+      setConversations(data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Load transcript for session
+  const handleViewTranscript = async (sessId) => {
+    setSelectedSessionId(sessId);
+    setTranscriptLoading(true);
+    try {
+      const msgs = await getVisitorConversationTranscript(sessId);
+      setTranscript(msgs || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTranscriptLoading(false);
+    }
+  };
+
+  // Load provider settings
+  const fetchProviderSettings = async () => {
+    if (!token) return;
+    try {
+      const data = await getProviderSettings(token);
+      setProviderSettings(data);
+      if (data.active_provider) {
+        setActiveProvider(data.active_provider);
       }
     } catch (err) {
-      console.error('Error fetching admin data:', err);
-    } finally {
-      setLoading(false);
+      console.error(err);
     }
   };
 
-  // Fetch CRM telemetry
-  const fetchCRMData = async () => {
-    setLoadingCrm(true);
-    try {
-      const [profiles, reviews, summary] = await Promise.all([
-        getCRMProfiles(adminKey).catch(() => []),
-        getCRMReviews(adminKey).catch(() => []),
-        getCRMSummary(adminKey).catch(() => null),
-      ]);
-      setCrmProfiles(profiles);
-      setCrmReviews(reviews);
-      setCrmSummary(summary);
-    } catch (err) {
-      console.error('Error fetching CRM data:', err);
-    } finally {
-      setLoadingCrm(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000); // Polling every 10s for new sessions
-    return () => clearInterval(interval);
-  }, [adminKey]);
-
-  useEffect(() => {
-    if (activeTab === 'metrics' && metricsSubTab === 'crm') {
-      fetchCRMData();
-    }
-  }, [activeTab, metricsSubTab, adminKey]);
-
-  // Derive active session from selectedSessionId
-  const selectedSession = sessions.find((s) => s.session_id === selectedSessionId) || null;
-
-  // Load chat messages when selectedSessionId changes
-  useEffect(() => {
-    if (!selectedSessionId) return;
-
-    async function loadChat() {
-      try {
-        const msgs = await getSessionMessages(selectedSessionId);
-        setSessionMessages(msgs);
-      } catch (err) {
-        console.error('Error loading session messages:', err);
-      }
-    }
-    loadChat();
-
-    // Connect WebSocket as Admin if session is web
-    if (selectedSession?.channel === 'web') {
-      const wsUrl = getWebSocketChatUrl(selectedSessionId);
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'SESSION_CLOSED') {
-            fetchData();
-            return;
-          }
-          // Only append if not already in list (prevent duplication)
-          setSessionMessages((prev) => {
-            if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
-            const isDuplicate = prev.some(
-              (m) =>
-                m.sender === msg.sender &&
-                m.message === msg.message &&
-                Math.abs(new Date(m.timestamp || Date.now()) - new Date(msg.timestamp || Date.now())) < 4000
-            );
-            if (isDuplicate) return prev;
-            return [...prev, msg];
-          });
-        } catch (e) {
-          console.error(e);
-        }
-      };
-
-      return () => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.close();
-        }
-      };
-    }
-  }, [selectedSessionId, selectedSession?.channel]);
-
-  // Auto-scroll chat
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [sessionMessages]);
-
-  const handleSendAdminWebMessage = (e) => {
+  // Save provider settings
+  const handleSaveProviders = async (e) => {
     e.preventDefault();
-    if (!inputMessage.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-
-    const payload = {
-      sender: 'admin',
-      sender_name: 'Asesor Académico',
-      message: inputMessage.trim(),
-    };
-    wsRef.current.send(JSON.stringify(payload));
-    setInputMessage('');
-  };
-
-  const handleSendTelegramReply = async (e) => {
-    e.preventDefault();
-    if (!telegramReplyText.trim() || !selectedSession?.telegram_chat_id) return;
-    setTelegramStatus('Enviando a Telegram...');
-
+    setSavingSettings(true);
+    setSettingsFeedback({ type: '', text: '' });
     try {
-      await replyTelegramStudent(
-        adminKey,
-        selectedSession.telegram_chat_id,
-        telegramReplyText.trim(),
-        selectedSession.session_id
-      );
-      setTelegramStatus('¡Mensaje entregado en Telegram con éxito!');
-      setTelegramReplyText('');
-      // Reload messages
-      const msgs = await getSessionMessages(selectedSession.session_id);
-      setSessionMessages(msgs);
-      setTimeout(() => setTelegramStatus(''), 3000);
-      fetchData();
+      const payload = { active_provider: activeProvider };
+      if (geminiKeyInput.trim()) payload.gemini_api_key = geminiKeyInput.trim();
+      if (groqKeyInput.trim()) payload.groq_api_key = groqKeyInput.trim();
+      if (openaiKeyInput.trim()) payload.openai_api_key = openaiKeyInput.trim();
+
+      const res = await updateProviderSettings(token, payload);
+      setSettingsFeedback({ type: 'success', text: res.message || 'Configuración guardada exitosamente.' });
+      setGeminiKeyInput('');
+      setGroqKeyInput('');
+      setOpenaiKeyInput('');
+      fetchProviderSettings();
     } catch (err) {
-      setTelegramStatus(`Error: ${err.message}`);
-    }
-  };
-
-  // Check if advisor has responded in this session
-  const hasAdvisorResponded = sessionMessages.some((m) => m.sender === 'admin') || selectedSession?.advisor_responded;
-
-  const handleConfirmCloseSession = async () => {
-    if (!selectedSession || !hasAdvisorResponded) return;
-    setIsClosing(true);
-    setCloseError('');
-
-    try {
-      await closeEscalationSession(adminKey, selectedSession.session_id);
-      setIsCloseModalOpen(false);
-      await fetchData();
-      const msgs = await getSessionMessages(selectedSession.session_id);
-      setSessionMessages(msgs);
-    } catch (err) {
-      setCloseError(err.message || 'Error al finalizar la sesión.');
+      setSettingsFeedback({ type: 'error', text: err.message || 'Error al actualizar configuración.' });
     } finally {
-      setIsClosing(false);
+      setSavingSettings(false);
     }
   };
 
-  // Partition sessions into active/waiting and resolved
-  const pendingSessions = sessions.filter((s) => s.status !== 'RESOLVED');
-  const resolvedSessions = sessions.filter((s) => s.status === 'RESOLVED');
+  useEffect(() => {
+    if (token) {
+      fetchMetrics();
+      fetchConversations();
+      fetchProviderSettings();
+    }
+  }, [token]);
+
+  // If not logged in, render Secure Login view
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-[#070515] text-slate-100 flex items-center justify-center p-5 relative">
+        <div className="max-w-md w-full p-8 sm:p-10 rounded-3xl bg-[#100c2a] border border-white/10 shadow-2xl space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-2xl bg-brand-lime text-brand-dark flex items-center justify-center text-2xl mx-auto font-bold shadow-lg shadow-brand-lime/20">
+              <FaShieldAlt />
+            </div>
+            <h2 className="font-display text-3xl uppercase text-white tracking-wide">Vanguard Staff</h2>
+            <p className="text-xs text-slate-400">Autenticación segura para panel de control y métricas</p>
+          </div>
+
+          {loginError && (
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
+              <FaExclamationTriangle />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-400 block mb-1 flex items-center gap-1.5">
+                <FaUser className="text-[10px]" /> Usuario Administrador
+              </label>
+              <input
+                type="text"
+                required
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                placeholder="admin"
+                className="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-400 block mb-1 flex items-center gap-1.5">
+                <FaLock className="text-[10px]" /> Contraseña
+              </label>
+              <input
+                type="password"
+                required
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-sm"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full py-3.5 bg-brand-lime hover:bg-[#b0f55c] text-brand-dark font-bold uppercase text-sm rounded-xl transition-all shadow-lg shadow-brand-lime/20 cursor-pointer"
+            >
+              {isLoggingIn ? 'Verificando...' : 'Iniciar Sesión'}
+            </button>
+          </form>
+
+          <div className="text-center pt-2">
+            <button onClick={onNavigateToLanding} className="text-xs text-slate-400 hover:text-white transition-colors">
+              ← Volver a la página principal
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
-      {/* Top Navbar */}
-      <header className="bg-slate-800/80 border-b border-slate-700/80 backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+    <div className="min-h-screen bg-[#070515] text-slate-100 font-sans flex flex-col">
+      
+      {/* ================= ADMIN TOPBAR ================= */}
+      <header className="h-16 bg-[#0c0926] border-b border-white/10 px-6 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-600 rounded-xl shadow-md shadow-indigo-600/30">
-            <Shield className="w-6 h-6 text-white" />
+          <div className="w-9 h-9 rounded-xl bg-brand-lime text-brand-dark flex items-center justify-center font-bold">
+            <FaShieldAlt />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-white tracking-tight">Portal Administrativo Académico</h1>
-              <span className="text-[10px] uppercase tracking-wider font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">
-                Staff Control
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">Mesa de Ayuda en Vivo, Enrutamiento Multi-Canal y Telemetría</p>
+            <span className="font-display text-xl uppercase tracking-wider text-white leading-none block">Vanguard Control</span>
+            <span className="text-[10px] text-slate-400 font-mono">Admin: {currentUser?.username || 'admin'}</span>
           </div>
         </div>
 
-        {/* Tab switcher & actions */}
-        <div className="flex items-center gap-4">
-          <div className="bg-slate-900/60 p-1 rounded-xl border border-slate-700 flex items-center gap-1">
-            <button
-              onClick={() => setActiveTab('escalation')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-                activeTab === 'escalation'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              Mesa de Escalación
-              {sessions.filter((s) => s.status === 'WAITING').length > 0 && (
-                <span className="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold animate-pulse">
-                  {sessions.filter((s) => s.status === 'WAITING').length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('metrics')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-                activeTab === 'metrics'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Activity className="w-4 h-4" />
-              Métricas & CRM
-            </button>
-          </div>
-
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 text-xs font-semibold">
           <button
-            onClick={() => {
-              fetchData();
-              if (activeTab === 'metrics' && metricsSubTab === 'crm') fetchCRMData();
-            }}
-            className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-colors"
-            title="Actualizar datos"
+            onClick={() => setActiveTab('metrics')}
+            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
+              activeTab === 'metrics' ? 'bg-brand-lime text-brand-dark' : 'text-slate-300 hover:text-white'
+            }`}
           >
-            <RefreshCw className={`w-4 h-4 ${loading || loadingCrm ? 'animate-spin' : ''}`} />
+            <FaChartBar />
+            <span>Métricas & KPIs</span>
           </button>
-
           <button
-            onClick={onLogout}
-            className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl transition-colors flex items-center gap-1.5"
+            onClick={() => { setActiveTab('conversations'); fetchConversations(); }}
+            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
+              activeTab === 'conversations' ? 'bg-brand-lime text-brand-dark' : 'text-slate-300 hover:text-white'
+            }`}
           >
-            <LogOut className="w-4 h-4" />
-            Salir
+            <FaComments />
+            <span>Conversaciones ({conversations.length})</span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('settings'); fetchProviderSettings(); }}
+            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
+              activeTab === 'settings' ? 'bg-brand-lime text-brand-dark' : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <FaKey />
+            <span>Switching de API Keys</span>
+          </button>
+        </div>
+
+        {/* Action icons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onNavigateToChat}
+            className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-slate-300 hover:text-white hover:bg-white/5"
+          >
+            Abrir Asistente
+          </button>
+          <button
+            onClick={handleLogout}
+            className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20"
+          >
+            <FaSignOutAlt />
+            <span>Salir</span>
           </button>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
-        {activeTab === 'escalation' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
-            {/* Left Column: Sessions List (4 cols) */}
-            <div className="lg:col-span-4 bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-700 mb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-indigo-400" />
-                  Mesa de Atención ({pendingSessions.length} Activas)
-                </h3>
-                <span className="text-xs font-semibold text-slate-400">
-                  {sessions.length} total
-                </span>
+      {/* ================= MAIN CONTENT ================= */}
+      <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8">
+        
+        {/* TAB 1: METRICS */}
+        {activeTab === 'metrics' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-3xl uppercase text-white tracking-wide">Métricas Operativas en Tiempo Real</h2>
+                <p className="text-xs text-slate-400">Telemetría calculada sobre todas las consultas procesadas</p>
               </div>
-
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {/* Active / Waiting Sessions */}
-                <div className="space-y-2">
-                  {pendingSessions.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 text-xs bg-slate-900/30 rounded-xl border border-dashed border-slate-800 p-4">
-                      No hay solicitudes de escalación pendientes en este momento.
-                    </div>
-                  ) : (
-                    pendingSessions.map((s) => {
-                      const isSelected = selectedSessionId === s.session_id;
-                      const isWaiting = s.status === 'WAITING';
-
-                      return (
-                        <div
-                          key={s.id}
-                          onClick={() => setSelectedSessionId(s.session_id)}
-                          className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                            isSelected
-                              ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md'
-                              : 'bg-slate-800/40 border-slate-700/60 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-white">{s.full_name}</span>
-                              <span className="text-[10px] font-mono text-slate-400">({s.national_id})</span>
-                            </div>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                                isWaiting
-                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              }`}
-                            >
-                              {s.status}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-                            <span className="font-mono bg-slate-900/60 px-2 py-0.5 rounded text-indigo-300 border border-slate-700">
-                              {s.session_id}
-                            </span>
-                            <span className="capitalize font-semibold text-slate-300">
-                              Canal: {s.channel}
-                            </span>
-                          </div>
-
-                          {s.initial_inquiry && (
-                            <p className="text-xs text-slate-400 mt-2 line-clamp-2 italic bg-slate-900/40 p-2 rounded-lg border border-slate-800">
-                              "{s.initial_inquiry}"
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Collapsible Section for Resolved Sessions */}
-                {resolvedSessions.length > 0 && (
-                  <div className="pt-2 border-t border-slate-700/60">
-                    <button
-                      type="button"
-                      onClick={() => setIsResolvedExpanded((prev) => !prev)}
-                      className="w-full py-2 px-3 bg-slate-900/70 hover:bg-slate-900 rounded-xl border border-slate-700 flex items-center justify-between text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors"
-                    >
-                      <span className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        Historial de Atenciones Finalizadas ({resolvedSessions.length})
-                      </span>
-                      {isResolvedExpanded ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </button>
-
-                    {isResolvedExpanded && (
-                      <div className="space-y-2 mt-2 pl-1 animate-fadeIn">
-                        {resolvedSessions.map((s) => {
-                          const isSelected = selectedSessionId === s.session_id;
-
-                          return (
-                            <div
-                              key={s.id}
-                              onClick={() => setSelectedSessionId(s.session_id)}
-                              className={`p-3 rounded-xl border cursor-pointer transition-all opacity-80 hover:opacity-100 ${
-                                isSelected
-                                  ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md'
-                                  : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:bg-slate-800 hover:border-slate-700'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-slate-200">{s.full_name}</span>
-                                  <span className="text-[10px] font-mono text-slate-500">({s.national_id})</span>
-                                </div>
-                                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-700/50 text-slate-400 border border-slate-600">
-                                  RESUELTA
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
-                                <span className="font-mono">{s.session_id}</span>
-                                <span className="capitalize">{s.channel}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={fetchMetrics}
+                disabled={metricsLoading}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-xs font-semibold flex items-center gap-2"
+              >
+                <FaSync className={metricsLoading ? 'animate-spin' : ''} />
+                <span>Actualizar</span>
+              </button>
             </div>
 
-            {/* Right Column: Live Chat Workspace (8 cols) */}
-            <div className="lg:col-span-8 bg-slate-800/60 border border-slate-700/80 rounded-2xl flex flex-col overflow-hidden">
-              {selectedSession ? (
-                <>
-                  {/* Chat Top Header */}
-                  <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2.5">
-                        <h3 className="text-base font-bold text-white">{selectedSession.full_name}</h3>
-                        <span className="text-xs font-mono text-indigo-300 bg-indigo-950/80 border border-indigo-700/50 px-2 py-0.5 rounded-md">
-                          ID: {selectedSession.session_id}
-                        </span>
-                        <span className="text-xs font-semibold text-slate-400">
-                          Doc: {selectedSession.national_id}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Canal: <strong className="text-slate-200 capitalize">{selectedSession.channel}</strong>
-                        {selectedSession.telegram_chat_id && (
-                          <span className="ml-2 font-mono text-cyan-300">
-                            (Telegram Chat ID: {selectedSession.telegram_chat_id})
-                          </span>
-                        )}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border ${
-                        selectedSession.status === 'RESOLVED'
-                          ? 'bg-slate-700/50 text-slate-300 border-slate-600'
-                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                      }`}>
-                        <Circle className="w-2.5 h-2.5 fill-current" />
-                        {selectedSession.status === 'RESOLVED' ? 'Atención Finalizada' : 'Sala Activa'}
-                      </span>
-
-                      {/* Terminate Session Button with Safeguards */}
-                      {selectedSession.status !== 'RESOLVED' && (
-                        <div className="relative group">
-                          <button
-                            onClick={() => {
-                              if (hasAdvisorResponded) {
-                                setIsCloseModalOpen(true);
-                              }
-                            }}
-                            disabled={!hasAdvisorResponded}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                              hasAdvisorResponded
-                                ? 'bg-rose-600/90 hover:bg-rose-600 text-white shadow-md shadow-rose-600/20 cursor-pointer'
-                                : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
-                            }`}
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Finalizar Atención
-                          </button>
-                          {!hasAdvisorResponded && (
-                            <div className="absolute right-0 top-full mt-1.5 hidden group-hover:block z-50 bg-slate-950 text-amber-300 text-[11px] font-medium px-3 py-1.5 rounded-lg border border-amber-500/30 whitespace-nowrap shadow-xl">
-                              ⚠️ Debes responder al menos una vez al usuario para poder finalizar la sesión.
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Initial Inquiry Trigger Banner */}
-                  {selectedSession.initial_inquiry && (
-                    <div className="bg-amber-950/40 border-b border-amber-900/50 px-6 py-2.5 flex items-center gap-3">
-                      <span className="text-[10px] uppercase tracking-wider font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md flex-shrink-0">
-                        Motivo de Escalación
-                      </span>
-                      <p className="text-xs text-amber-100 font-medium truncate">
-                        "{selectedSession.initial_inquiry}"
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Messages Feed */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-900/60">
-                    {sessionMessages.length === 0 ? (
-                      <div className="text-center py-20 text-slate-500 text-xs">
-                        No hay mensajes registrados en esta sesión.
-                      </div>
-                    ) : (
-                      sessionMessages.map((m, index) => {
-                        const isAdmin = m.sender === 'admin';
-                        const isSystem = m.sender === 'system';
-
-                        if (isSystem) {
-                          return (
-                            <div key={index} className="text-center my-2">
-                              <span className="text-[11px] font-medium text-slate-400 bg-slate-800/80 border border-slate-700 px-3.5 py-1 rounded-full inline-block">
-                                {m.message}
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div
-                            key={index}
-                            className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
-                          >
-                            <span className="text-[10px] font-bold text-slate-400 mb-1 px-1">
-                              {isAdmin ? 'Tú (Asesor Académico)' : (m.sender_name || selectedSession.full_name)}
-                            </span>
-                            <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-sm ${
-                                isAdmin
-                                  ? 'bg-indigo-600 text-white rounded-br-none'
-                                  : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-none'
-                              }`}
-                            >
-                              {m.message}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                    <div ref={chatBottomRef} />
-                  </div>
-
-                  {/* Input Response Controls */}
-                  {selectedSession.status === 'RESOLVED' ? (
-                    <div className="p-4 bg-slate-800 border-t border-slate-700 text-center text-xs text-slate-400">
-                      Esta sesión ha sido finalizada y evaluada.
-                    </div>
-                  ) : selectedSession.channel === 'telegram' && selectedSession.telegram_chat_id ? (
-                    /* Telegram Responder Form */
-                    <div className="p-4 bg-slate-800 border-t border-slate-700 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Respuesta Directa a Telegram Bot
-                        </span>
-                        {telegramStatus && (
-                          <span className="text-xs font-semibold text-emerald-400">{telegramStatus}</span>
-                        )}
-                      </div>
-                      <form onSubmit={handleSendTelegramReply} className="flex items-center gap-3">
-                        <input
-                          type="text"
-                          placeholder={`Escribe mensaje para enviar a Telegram (${selectedSession.telegram_chat_id})...`}
-                          value={telegramReplyText}
-                          onChange={(e) => setTelegramReplyText(e.target.value)}
-                          className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 text-white font-medium"
-                        />
-                        <button
-                          type="submit"
-                          disabled={!telegramReplyText.trim()}
-                          className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                          Enviar a Telegram
-                        </button>
-                      </form>
-                    </div>
-                  ) : (
-                    /* Web WebSocket Live Responder */
-                    <form onSubmit={handleSendAdminWebMessage} className="p-4 bg-slate-800 border-t border-slate-700 flex items-center gap-3">
-                      <input
-                        type="text"
-                        placeholder={`Escribir respuesta en tiempo real a ${selectedSession.full_name}...`}
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-white font-medium"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!inputMessage.trim()}
-                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        Enviar
-                      </button>
-                    </form>
-                  )}
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
-                  Selecciona una sesión de escalación para abrir el canal de comunicación.
+            {metrics && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-6 rounded-3xl bg-[#100c2a] border border-white/10 space-y-2">
+                  <span className="text-xs text-slate-400 uppercase font-bold flex items-center gap-1.5"><FaLayerGroup /> Total Consultas</span>
+                  <div className="text-3xl font-display text-white">{metrics.total_queries_processed}</div>
+                  <p className="text-[11px] text-slate-400">Tráfico global acumulado</p>
                 </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Metrics & Analytics Tab with CRM Explorer */
-          <div className="space-y-6 animate-fadeIn">
-            {/* Sub-tab Navigation for Metrics */}
-            <div className="flex items-center justify-between bg-slate-800/80 p-2 rounded-2xl border border-slate-700">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMetricsSubTab('rag')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                    metricsSubTab === 'rag'
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Activity className="w-4 h-4" />
-                  Telemetría RAG & Rendimiento
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMetricsSubTab('crm')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                    metricsSubTab === 'crm'
-                      ? 'bg-amber-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <HeartHandshake className="w-4 h-4" />
-                  Gestión CRM & Reseñas de Atención
-                </button>
-              </div>
-
-              <span className="text-xs text-slate-400 font-mono pr-2">
-                {metricsSubTab === 'rag' ? 'Motor LangGraph RAG' : 'Base Relacional SQLite CRM'}
-              </span>
-            </div>
-
-            {metricsSubTab === 'rag' ? (
-              /* RAG Metrics Subtab */
-              metrics ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
-                      <div className="flex items-center justify-between text-slate-400 mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider">Total Consultas</span>
-                        <MessageSquare className="w-5 h-5 text-indigo-400" />
-                      </div>
-                      <div className="text-3xl font-extrabold text-white">
-                        {metrics.total_queries_processed}
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-2">Inquiries procesadas por el sistema</p>
-                    </div>
-
-                    <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
-                      <div className="flex items-center justify-between text-slate-400 mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider">Resueltas por Caché</span>
-                        <Zap className="w-5 h-5 text-amber-400" />
-                      </div>
-                      <div className="text-3xl font-extrabold text-amber-400">
-                        {metrics.resolved_by_cache}
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-2">Respuestas en sub-segundo ($0 USD)</p>
-                    </div>
-
-                    <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
-                      <div className="flex items-center justify-between text-slate-400 mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider">Tasa de Escalación</span>
-                        <TrendingUp className="w-5 h-5 text-rose-400" />
-                      </div>
-                      <div className="text-3xl font-extrabold text-rose-400">
-                        {metrics.escalation_rate_pct.toFixed(1)}%
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-2">{metrics.escalated_to_human} escalaciones humanas</p>
-                    </div>
-
-                    <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
-                      <div className="flex items-center justify-between text-slate-400 mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider">Latencia Promedio</span>
-                        <Clock className="w-5 h-5 text-emerald-400" />
-                      </div>
-                      <div className="text-3xl font-extrabold text-emerald-400">
-                        {metrics.average_latency_ms.toFixed(0)} ms
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-2">Costo total: ${metrics.total_cost_usd.toFixed(4)} USD</p>
-                    </div>
-                  </div>
-
-                  {/* Additional Telemetry Details */}
-                  <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 shadow-lg">
-                    <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-indigo-400" />
-                      Distribución Operativa del Pipeline RAG
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/60">
-                        <span className="text-xs text-slate-400 font-semibold">Resueltas por RAG (IA)</span>
-                        <p className="text-xl font-bold text-white mt-1">{metrics.resolved_by_rag}</p>
-                      </div>
-                      <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/60">
-                        <span className="text-xs text-slate-400 font-semibold">Tokens Consumidos</span>
-                        <p className="text-xl font-bold text-white mt-1">
-                          {(typeof metrics.total_tokens_consumed === 'object'
-                            ? metrics.total_tokens_consumed?.total || (metrics.total_tokens_consumed?.prompt_tokens + metrics.total_tokens_consumed?.completion_tokens) || 0
-                            : Number(metrics.total_tokens_consumed || 0)
-                          ).toLocaleString()}
-                        </p>
-                        {typeof metrics.total_tokens_consumed === 'object' && metrics.total_tokens_consumed && (
-                          <p className="text-[10px] text-slate-400 mt-1">
-                            Prompt: {metrics.total_tokens_consumed.prompt_tokens?.toLocaleString() || 0} | Completion: {metrics.total_tokens_consumed.completion_tokens?.toLocaleString() || 0}
-                          </p>
-                        )}
-                      </div>
-                      <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-700/60">
-                        <span className="text-xs text-slate-400 font-semibold">Costo Acumulado</span>
-                        <p className="text-xl font-bold text-emerald-400 mt-1">${metrics.total_cost_usd.toFixed(5)} USD</p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-20 text-slate-500">Cargando métricas del sistema...</div>
-              )
-            ) : (
-              /* CRM & Reviews Subtab */
-              <div className="space-y-6 animate-fadeIn">
-                {/* CRM Summary KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
-                    <div className="flex items-center justify-between text-slate-400 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Calificación Promedio (CSAT)</span>
-                      <Award className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <div className="flex items-baseline gap-3">
-                      <div className="text-3xl font-extrabold text-amber-400">
-                        {crmSummary?.average_rating ? crmSummary.average_rating.toFixed(1) : '0.0'}
-                      </div>
-                      <div className="flex items-center text-amber-400">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`w-4 h-4 ${
-                              s <= Math.round(crmSummary?.average_rating || 0)
-                                ? 'fill-amber-400 text-amber-400'
-                                : 'text-slate-600'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-2">
-                      Basado en {crmSummary?.total_reviews || 0} reseñas de aspirantes
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
-                    <div className="flex items-center justify-between text-slate-400 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Aspirantes en CRM</span>
-                      <UserCheck className="w-5 h-5 text-indigo-400" />
-                    </div>
-                    <div className="text-3xl font-extrabold text-indigo-400">
-                      {crmSummary?.total_profiles || crmProfiles.length}
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-2">Perfiles únicos identificados con documento</p>
-                  </div>
-
-                  <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg">
-                    <div className="flex items-center justify-between text-slate-400 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Desglose de Calificaciones</span>
-                      <Star className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-mono pt-1">
-                      <span className="text-emerald-400">5★: {crmSummary?.rating_distribution?.['5'] || 0}</span>
-                      <span className="text-lime-400">4★: {crmSummary?.rating_distribution?.['4'] || 0}</span>
-                      <span className="text-amber-400">3★: {crmSummary?.rating_distribution?.['3'] || 0}</span>
-                      <span className="text-orange-400">2★: {crmSummary?.rating_distribution?.['2'] || 0}</span>
-                      <span className="text-rose-400">1★: {crmSummary?.rating_distribution?.['1'] || 0}</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-2">Distribución de satisfacción estudiantil</p>
-                  </div>
+                <div className="p-6 rounded-3xl bg-[#100c2a] border border-white/10 space-y-2">
+                  <span className="text-xs text-brand-lime uppercase font-bold flex items-center gap-1.5"><FaBolt /> Triage Determinista</span>
+                  <div className="text-3xl font-display text-brand-lime">{metrics.resolved_by_faq_triage}</div>
+                  <p className="text-[11px] text-slate-400">$0 USD • 0 tokens consumidos</p>
                 </div>
-
-                {/* Reviews List & Feedback Comments */}
-                <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 shadow-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <Star className="w-5 h-5 text-amber-400" />
-                      Reseñas y Retroalimentación de Aspirantes
-                    </h3>
-                    <span className="text-xs text-slate-400">{crmReviews.length} registradas</span>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    {crmReviews.length === 0 ? (
-                      <div className="text-center py-10 text-slate-500 text-xs">
-                        Aún no se han registrado reseñas de atención personalizada.
-                      </div>
-                    ) : (
-                      <table className="w-full text-left text-xs text-slate-300">
-                        <thead className="bg-slate-900/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
-                          <tr>
-                            <th className="py-3 px-4">Sesión ID</th>
-                            <th className="py-3 px-4">Documento</th>
-                            <th className="py-3 px-4">Calificación</th>
-                            <th className="py-3 px-4">Comentarios / Notas</th>
-                            <th className="py-3 px-4">Fecha</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800 font-medium">
-                          {crmReviews.map((r) => (
-                            <tr key={r.id} className="hover:bg-slate-800/40">
-                              <td className="py-3 px-4 font-mono text-indigo-300">{r.session_id}</td>
-                              <td className="py-3 px-4 font-mono text-slate-400">{r.national_id}</td>
-                              <td className="py-3 px-4">
-                                <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-bold">
-                                  {r.rating} ★
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 italic text-slate-300 max-w-xs truncate">
-                                {r.notes || <span className="text-slate-600 not-italic">Sin comentarios adicionales</span>}
-                              </td>
-                              <td className="py-3 px-4 text-slate-500 text-[11px]">
-                                {new Date(r.created_at).toLocaleString()}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
+                <div className="p-6 rounded-3xl bg-[#100c2a] border border-white/10 space-y-2">
+                  <span className="text-xs text-brand-blue uppercase font-bold flex items-center gap-1.5"><FaClock /> Latencia Promedio</span>
+                  <div className="text-3xl font-display text-brand-blue">{metrics.average_latency_ms} ms</div>
+                  <p className="text-[11px] text-slate-400">Tiempo de respuesta RAG</p>
                 </div>
-
-                {/* Profiles Table */}
-                <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 shadow-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <UserCheck className="w-5 h-5 text-indigo-400" />
-                      Directorio de Perfiles de Aspirantes (CRM)
-                    </h3>
-                    <span className="text-xs text-slate-400">{crmProfiles.length} perfiles</span>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    {crmProfiles.length === 0 ? (
-                      <div className="text-center py-10 text-slate-500 text-xs">
-                        No hay perfiles de aspirantes registrados en el CRM.
-                      </div>
-                    ) : (
-                      <table className="w-full text-left text-xs text-slate-300">
-                        <thead className="bg-slate-900/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
-                          <tr>
-                            <th className="py-3 px-4">Aspirante</th>
-                            <th className="py-3 px-4">Cédula / Documento</th>
-                            <th className="py-3 px-4">Canal</th>
-                            <th className="py-3 px-4 text-center">Escalaciones</th>
-                            <th className="py-3 px-4 text-center">Mensajes Enviados</th>
-                            <th className="py-3 px-4">Última Interacción</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800 font-medium">
-                          {crmProfiles.map((p) => (
-                            <tr key={p.id} className="hover:bg-slate-800/40">
-                              <td className="py-3 px-4 font-bold text-white">{p.full_name}</td>
-                              <td className="py-3 px-4 font-mono text-slate-400">{p.national_id}</td>
-                              <td className="py-3 px-4 capitalize">
-                                <span className="bg-slate-800 px-2 py-0.5 rounded text-indigo-300 border border-slate-700">
-                                  {p.channel}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 text-center font-bold text-amber-400">
-                                {p.total_escalations_count}
-                              </td>
-                              <td className="py-3 px-4 text-center font-bold text-emerald-400">
-                                {p.total_messages_sent}
-                              </td>
-                              <td className="py-3 px-4 text-slate-500 text-[11px]">
-                                {new Date(p.last_interaction_at).toLocaleString()}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
+                <div className="p-6 rounded-3xl bg-[#100c2a] border border-white/10 space-y-2">
+                  <span className="text-xs text-brand-yellow uppercase font-bold flex items-center gap-1.5"><FaDollarSign /> Costo Estimado</span>
+                  <div className="text-3xl font-display text-brand-yellow">${metrics.total_cost_usd} USD</div>
+                  <p className="text-[11px] text-slate-400">Tokens: {metrics.total_tokens_consumed?.total || 0}</p>
                 </div>
               </div>
             )}
           </div>
         )}
-      </main>
 
-      {/* Confirmation Modal for Ending Session */}
-      {isCloseModalOpen && selectedSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-slate-100 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-base font-bold text-white">¿Finalizar Atención Personalizada?</h4>
-                <p className="text-xs text-slate-400">Sesión: {selectedSession.session_id}</p>
-              </div>
+        {/* TAB 2: CONVERSATIONS */}
+        {activeTab === 'conversations' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-display text-3xl uppercase text-white tracking-wide">Registro de Conversaciones de Visitantes</h2>
+              <p className="text-xs text-slate-400">Historial completo de auditoría y transcripciones de cada usuario</p>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
-              ¿Estás seguro de dar por concluida la asesoría con <strong className="text-white">{selectedSession.full_name}</strong>? Se notificará al aspirante y se le solicitará calificar el servicio del 1 al 5.
-            </p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Session list */}
+              <div className="lg:col-span-1 p-4 rounded-3xl bg-[#100c2a] border border-white/10 space-y-2 max-h-[600px] overflow-y-auto">
+                <div className="text-xs font-bold uppercase text-slate-400 px-2 mb-2">Sesiones Recientes</div>
+                {conversations.length > 0 ? (
+                  conversations.map((sess) => (
+                    <button
+                      key={sess.id}
+                      onClick={() => handleViewTranscript(sess.id)}
+                      className={`w-full text-left p-3 rounded-2xl border transition-all block ${
+                        selectedSessionId === sess.id
+                          ? 'bg-brand-lime/10 border-brand-lime/40 text-brand-lime'
+                          : 'bg-white/5 border-white/5 hover:border-white/20 text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold mb-1">
+                        <span className="truncate">{sess.title || sess.id}</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-white">{sess.channel}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 truncate">{sess.last_message || 'Sin mensajes'}</p>
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 mt-2">
+                        <span>{sess.message_count} mensajes</span>
+                        <span>{new Date(sess.updated_at).toLocaleDateString()}</span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-500 p-4">No hay conversaciones registradas.</p>
+                )}
+              </div>
 
-            {closeError && (
-              <div className="p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl text-xs text-rose-300">
-                {closeError}
+              {/* Transcript Viewer */}
+              <div className="lg:col-span-2 p-6 rounded-3xl bg-[#100c2a] border border-white/10 space-y-4 max-h-[600px] overflow-y-auto">
+                <div className="text-xs font-bold uppercase text-slate-400 pb-2 border-b border-white/10">
+                  {selectedSessionId ? `Transcripción: ${selectedSessionId}` : 'Selecciona una conversación'}
+                </div>
+
+                {transcriptLoading ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">Cargando mensajes...</div>
+                ) : transcript.length > 0 ? (
+                  <div className="space-y-4">
+                    {transcript.map((m, idx) => (
+                      <div key={idx} className={`p-4 rounded-2xl text-xs space-y-1.5 ${
+                        m.sender === 'user' ? 'bg-white/10 border border-white/20' : 'bg-[#18133d] border border-white/10'
+                      }`}>
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className={`font-bold uppercase ${m.sender === 'user' ? 'text-brand-lime' : 'text-brand-blue'}`}>
+                            {m.sender === 'user' ? 'Usuario' : 'Vanguard Assistant'}
+                          </span>
+                          <span className="text-slate-400">{new Date(m.created_at).toLocaleTimeString()}</span>
+                        </div>
+                        <p className="text-slate-200 leading-relaxed whitespace-pre-line">{m.content}</p>
+                        {m.latency_ms > 0 && (
+                          <div className="text-[10px] text-slate-500 font-mono pt-1">
+                            Latencia: {Math.round(m.latency_ms)}ms • Score: {m.confidence_score}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16 text-slate-500 text-xs">
+                    {selectedSessionId ? 'Esta conversación no contiene mensajes.' : 'Haz clic en una sesión a la izquierda para inspeccionar los mensajes.'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: API KEY & PROVIDER SWITCHING */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6 max-w-4xl">
+            <div>
+              <h2 className="font-display text-3xl uppercase text-white tracking-wide">Configuración de Proveedores LLM & API Keys</h2>
+              <p className="text-xs text-slate-400">Conmutación dinámica en caliente sin reiniciar el servidor</p>
+            </div>
+
+            {settingsFeedback.text && (
+              <div className={`p-4 rounded-2xl text-xs flex items-center gap-2 ${
+                settingsFeedback.type === 'success' 
+                  ? 'bg-brand-lime/10 border border-brand-lime/30 text-brand-lime' 
+                  : 'bg-red-500/10 border border-red-500/30 text-red-300'
+              }`}>
+                {settingsFeedback.type === 'success' ? <FaCheckCircle /> : <FaExclamationTriangle />}
+                <span>{settingsFeedback.text}</span>
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <form onSubmit={handleSaveProviders} className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 space-y-6">
+              {/* Active Provider Selector */}
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-400 block mb-3">Proveedor LLM Activo</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { id: 'gemini', name: 'Google Gemini', desc: 'gemini-2.5-flash', icon: <FaGoogle className="text-xl text-[#4285F4]" /> },
+                    { id: 'groq', name: 'Groq LPU (Ultra-Fast)', desc: 'llama-3.3-70b', icon: <FaBolt className="text-xl text-brand-lime" /> },
+                    { id: 'openai', name: 'OpenAI', desc: 'gpt-4o-mini', icon: <FaRobot className="text-xl text-brand-blue" /> },
+                  ].map((p) => (
+                    <button
+                      type="button"
+                      key={p.id}
+                      onClick={() => setActiveProvider(p.id)}
+                      className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                        activeProvider === p.id
+                          ? 'bg-brand-lime/10 border-brand-lime text-white shadow-lg shadow-brand-lime/10'
+                          : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/30'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        {p.icon}
+                        {activeProvider === p.id && <span className="text-[10px] font-bold bg-brand-lime text-brand-dark px-2 py-0.5 rounded-full uppercase">Activo</span>}
+                      </div>
+                      <span className="font-bold text-sm text-white block">{p.name}</span>
+                      <span className="text-[11px] font-mono text-slate-400">{p.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* API Keys Inputs */}
+              <div className="space-y-4 pt-4 border-t border-white/10">
+                <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider">Claves de API Personalizadas</h3>
+                
+                {/* Gemini */}
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1 font-medium">Google Gemini API Key</label>
+                  <input
+                    type="password"
+                    value={geminiKeyInput}
+                    onChange={(e) => setGeminiKeyInput(e.target.value)}
+                    placeholder={providerSettings?.providers?.gemini?.masked_key || "AIzaSy..."}
+                    className="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-xs font-mono"
+                  />
+                </div>
+
+                {/* Groq */}
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1 font-medium">Groq API Key (LPU Inference)</label>
+                  <input
+                    type="password"
+                    value={groqKeyInput}
+                    onChange={(e) => setGroqKeyInput(e.target.value)}
+                    placeholder={providerSettings?.providers?.groq?.masked_key || "gsk_..."}
+                    className="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-xs font-mono"
+                  />
+                </div>
+
+                {/* OpenAI */}
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1 font-medium">OpenAI API Key</label>
+                  <input
+                    type="password"
+                    value={openaiKeyInput}
+                    onChange={(e) => setOpenaiKeyInput(e.target.value)}
+                    placeholder={providerSettings?.providers?.openai?.masked_key || "sk-..."}
+                    className="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-xs font-mono"
+                  />
+                </div>
+              </div>
+
               <button
-                type="button"
-                onClick={() => setIsCloseModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
+                type="submit"
+                disabled={savingSettings}
+                className="w-full py-3.5 bg-brand-lime hover:bg-[#b0f55c] text-brand-dark font-bold uppercase text-sm rounded-xl transition-all shadow-lg shadow-brand-lime/20 cursor-pointer"
               >
-                Cancelar
+                {savingSettings ? 'Guardando cambios...' : 'Guardar y Aplicar Proveedor'}
               </button>
-              <button
-                type="button"
-                onClick={handleConfirmCloseSession}
-                disabled={isClosing}
-                className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md transition-all disabled:opacity-50"
-              >
-                {isClosing ? 'Finalizando...' : 'Sí, Finalizar Atención'}
-              </button>
-            </div>
+            </form>
           </div>
-        </div>
-      )}
+        )}
+
+      </main>
     </div>
   );
 }

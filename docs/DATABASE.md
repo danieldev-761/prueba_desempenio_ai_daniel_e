@@ -88,6 +88,59 @@ Stores student satisfaction ratings and feedback upon escalation resolution.
 | `notes` | `TEXT` | Nullable | Optional qualitative comments. |
 | `created_at` | `DATETIME` | Not Null, Default UTC | Rating submission timestamp. |
 
+### Entity: `admin_users`
+Stores administrative users with encrypted credentials and role-based permissions.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | Primary Key, Auto Increment | Admin user identifier. |
+| `username` | `VARCHAR(64)` | Unique, Indexed, Not Null | Login username. |
+| `hashed_password` | `VARCHAR(256)` | Not Null | Bcrypt hashed password. |
+| `role` | `VARCHAR(32)` | Not Null, Default 'admin' | User role (`admin`, `staff`). |
+| `is_active` | `BOOLEAN` | Not Null, Default True | Account activation status. |
+| `created_at` | `DATETIME` | Not Null, Default UTC | Registration timestamp. |
+| `last_login` | `DATETIME` | Nullable | Most recent login timestamp. |
+
+### Entity: `system_settings`
+Maintains dynamic runtime settings, including active LLM providers and custom API keys.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | Primary Key, Auto Increment | Setting identifier. |
+| `key` | `VARCHAR(64)` | Unique, Indexed, Not Null | Setting configuration key (e.g. `active_provider`, `groq_api_key`). |
+| `value` | `TEXT` | Not Null | Serialized configuration value. |
+| `description` | `VARCHAR(255)` | Nullable | Human-readable explanation of setting. |
+| `updated_at` | `DATETIME` | Not Null, Default UTC | Last modification timestamp. |
+
+### Entity: `chat_session_records`
+Maintains records of all visitor web and multi-channel chat sessions.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | Primary Key, Auto Increment | Record identifier. |
+| `session_id` | `VARCHAR(64)` | Unique, Indexed, Not Null | Unique session identifier. |
+| `channel` | `VARCHAR(32)` | Not Null, Default 'web' | Interaction channel (`web`, `telegram`, `webhook`). |
+| `student_name` | `VARCHAR(128)` | Nullable | Identified visitor name. |
+| `created_at` | `DATETIME` | Not Null, Default UTC | Session initiation timestamp. |
+| `updated_at` | `DATETIME` | Not Null, Default UTC | Most recent message timestamp. |
+| `total_messages` | `INTEGER` | Not Null, Default 0 | Total number of messages in session. |
+
+### Entity: `chat_message_records`
+Stores transcripts of all user and assistant messages for auditability and visitor analytics.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | Primary Key, Auto Increment | Message identifier. |
+| `session_id` | `VARCHAR(64)` | Indexed, Not Null | Foreign key reference to session ID. |
+| `role` | `VARCHAR(32)` | Not Null | Message author (`user`, `assistant`, `system`). |
+| `content` | `TEXT` | Not Null | Message text body. |
+| `status` | `VARCHAR(32)` | Nullable | Resolution status tag (`RESOLVED_BY_RAG`, `RESOLVED_BY_CACHE`, etc.). |
+| `confidence_score` | `FLOAT` | Nullable | Highest relevance or similarity score. |
+| `cost_usd` | `FLOAT` | Nullable | Cost of LLM inference in USD. |
+| `latency_ms` | `FLOAT` | Nullable | Processing time in milliseconds. |
+| `sources` | `TEXT` | Nullable | JSON serialized list of source citations. |
+| `created_at` | `DATETIME` | Not Null, Default UTC | Message timestamp. |
+
 ---
 
 ## 3. Vector Database Collections (ChromaDB)

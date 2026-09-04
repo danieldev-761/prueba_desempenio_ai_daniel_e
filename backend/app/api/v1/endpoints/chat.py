@@ -71,6 +71,48 @@ async def chat_completion(
             cost_usd=cost_usd,
         )
         db.add(telemetry_entry)
+
+        # Persist Visitor Chat Session & History
+        import json
+        from sqlalchemy.future import select
+        from app.models.conversation import ChatSessionRecord, ChatMessageRecord
+
+        sess_stmt = select(ChatSessionRecord).where(ChatSessionRecord.id == session_id)
+        sess_res = await db.execute(sess_stmt)
+        chat_sess = sess_res.scalars().first()
+        if not chat_sess:
+            title_text = payload.query.strip()
+            if len(title_text) > 40:
+                title_text = title_text[:37] + "..."
+            chat_sess = ChatSessionRecord(
+                id=session_id,
+                title=title_text or "Nueva Consulta",
+                channel=channel,
+            )
+            db.add(chat_sess)
+            await db.flush()
+
+        # Add user message
+        db.add(ChatMessageRecord(
+            session_id=session_id,
+            sender="user",
+            content=payload.query,
+            confidence_score=1.0,
+            latency_ms=0.0,
+        ))
+
+        # Add assistant message
+        sources_data = [s.model_dump() for s in sources]
+        db.add(ChatMessageRecord(
+            session_id=session_id,
+            sender="assistant",
+            content=state.get("generation", ""),
+            status=state.get("status", "RESOLVED_BY_RAG"),
+            sources_json=json.dumps(sources_data, ensure_ascii=False) if sources_data else None,
+            confidence_score=state.get("relevance_score", 0.0),
+            latency_ms=latency_ms,
+        ))
+
         await db.commit()
 
         return ChatResponse(

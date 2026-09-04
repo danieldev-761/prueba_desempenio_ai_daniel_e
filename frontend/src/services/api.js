@@ -21,24 +21,111 @@ export async function sendChatMessage(query, sessionId, channel = 'web') {
   return response.json();
 }
 
-export async function getAdminMetrics(adminKey) {
-  const response = await fetch(`${API_BASE_URL}/metrics`, {
-    method: 'GET',
+export async function adminLogin(username, password) {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
     headers: {
-      'X-Admin-Key': adminKey,
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Credenciales inválidas.');
+  }
+
+  return response.json();
+}
+
+export async function getProviderSettings(tokenOrKey) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (tokenOrKey) {
+    if (tokenOrKey.startsWith('ey') || tokenOrKey.length > 30) {
+      headers['Authorization'] = `Bearer ${tokenOrKey}`;
+    } else {
+      headers['X-Admin-Key'] = tokenOrKey;
+    }
+  }
+
+  const response = await fetch(`${API_BASE_URL}/settings/providers`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Error al obtener configuración de proveedores');
+  }
+
+  return response.json();
+}
+
+export async function updateProviderSettings(tokenOrKey, payload) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (tokenOrKey) {
+    if (tokenOrKey.startsWith('ey') || tokenOrKey.length > 30) {
+      headers['Authorization'] = `Bearer ${tokenOrKey}`;
+    } else {
+      headers['X-Admin-Key'] = tokenOrKey;
+    }
+  }
+
+  const response = await fetch(`${API_BASE_URL}/settings/providers`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Error al actualizar proveedores de IA');
+  }
+
+  return response.json();
+}
+
+export async function getVisitorConversations(limit = 50, offset = 0) {
+  const response = await fetch(`${API_BASE_URL}/conversations?limit=${limit}&offset=${offset}`);
+  if (!response.ok) {
+    throw new Error('Error al cargar conversaciones de visitantes');
+  }
+  return response.json();
+}
+
+export async function getVisitorConversationTranscript(sessionId) {
+  const response = await fetch(`${API_BASE_URL}/conversations/${sessionId}`);
+  if (!response.ok) {
+    throw new Error('Error al cargar mensajes de la conversación');
+  }
+  return response.json();
+}
+
+export async function getAdminMetrics(tokenOrKey) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (tokenOrKey) {
+    if (tokenOrKey.startsWith('ey') || tokenOrKey.length > 30) {
+      headers['Authorization'] = `Bearer ${tokenOrKey}`;
+    } else {
+      headers['X-Admin-Key'] = tokenOrKey;
+    }
+  }
+
+  const response = await fetch(`${API_BASE_URL}/metrics`, {
+    method: 'GET',
+    headers,
   });
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 422) {
-      throw new Error('Clave de Administrador inválida. Acceso Denegado.');
+      throw new Error('No autorizado. Inicia sesión con tus credenciales.');
     }
     throw new Error(`Error al obtener métricas (${response.status})`);
   }
 
   return response.json();
 }
+
 
 export async function startEscalationSession(fullName, nationalId, initialInquiry = '', channel = 'web', telegramChatId = null) {
   const response = await fetch(`${API_BASE_URL}/escalation/start`, {

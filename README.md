@@ -53,70 +53,35 @@ graph TD
 
 ## ✨ Key Capabilities
 
-1. **Zero-Token Deterministic Triage Engine (ADR-012)**:
-   - Evaluates inquiries against a pre-compiled JSON catalog (`frequent_issues.json`) covering 8 critical operational categories (payments, campus virtual access, study certificates, placement tests, schedule shifts, course freezes, textbook activation codes, and international exam prep).
-   - Returns structured self-help diagnostic checklists in **$< 5\text{ ms}$** consuming **$0\text{ tokens}$** at **$\$0.0\text{ USD}$ cost**, eliminating LLM API consumption for predictable operational requests.
-2. **Zero-Hallucination Guardrails & Closed-Catalog Negation (ADR-011)**:
+1. **Dynamic Multi-LLM Provider Switching & Groq LPU Integration (ADR-016)**:
+   - Administrators can seamlessly switch between **Groq LPU** (`llama-3.3-70b-versatile`), **Google Gemini** (`gemini-2.5-flash`), and **OpenAI** (`gpt-4o-mini`) directly from the Admin Portal in real time without restarting the application.
+   - Custom API keys can be supplied per provider with secure masking and runtime database persistence.
+2. **Encrypted Admin Authentication & JWT Bearer Sessions**:
+   - SQLite `admin_users` table with **bcrypt** password hashing.
+   - Secure access tokens issued via **JSON Web Tokens (JWT)** for protected endpoints (`/api/v1/metrics`, `/api/v1/settings/providers`, `/api/v1/conversations`).
+   - Default administrative credentials auto-seeded on initialization: `admin` / `admin12345`.
+3. **Vanguard Academy UI/UX Revolution (`ui-ux-pro-max`)**:
+   - **Hero WebGL GhostCursor**: Fluid 3D particle trail built with Three.js.
+   - **Editorial Landing Page**: Official CEFR programs, Bogotá & Medellín campuses, COP pricing tables, and free placement test CTA.
+   - **Perplexity-style AI Assistant**: Citations pill cards, verification badges, collapsible search history, and instant question chips.
+   - **No Human Advisor Contact Leaks**: Inquiries are strictly guided through the zero-hallucination AI Assistant.
+4. **Visitor Conversation History & Auditing**:
+   - Automated persistence of visitor sessions and messages in `chat_session_records` and `chat_message_records` for full compliance and inspection.
+5. **Supervisor-Resilient Telegram Bot Worker**:
+   - Robust long-polling worker with periodic client recycling and exponential backoff retry.
+   - Self-healing supervisor loop in `run.sh` ensuring 24/7 uninterrupted uptime in cloud container deployments (Railway).
+6. **Zero-Token Deterministic Triage Engine (ADR-012)**:
+   - Returns structured self-help diagnostic checklists in **$< 5\text{ ms}$** consuming **$0\text{ tokens}$** at **$\$0.0\text{ USD}$ cost**.
+7. **Zero-Hallucination Guardrails & Closed-Catalog Negation (ADR-011)**:
    - Strict citation referencing the 3 official academy documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`).
-   - Closed-Catalog Reasoning: questions about unoffered languages (e.g. Russian, Japanese) or payment methods are authoritatively confirmed as unavailable and redirected to the 5 official languages without false human escalations.
-   - Closed-World Assumption: when an inquiry is genuinely out of scope or requires administrative exceptions, the assistant emits `[[ESCALATE]]`, transferring the student to a human advisor.
-3. **Sub-Second Semantic Caching**:
-   - Persists query-response embeddings into a dedicated ChromaDB collection using normalized cosine distance metric (`hnsw:space="cosine"`).
-   - Paraphrased and repeated inquiries are resolved in `<30ms` with **$0 USD LLM token cost**.
-4. **Multi-Channel Experience**:
-   - **Web Chat SPA**: Interactive chat with suggestion chips, citations accordion, and real-time live advisor chat.
-   - **Telegram Bot**: Operates in standalone long-polling mode (`scripts/telegram_worker.py`) for `@CL_Academy_bot` or webhook mode.
-   - **Contact Form**: Submits inquiries through the webhook pipeline.
-5. **Human-in-the-Loop Escalation & CRM**:
-   - Generates deterministic session IDs (`[FirstName]_[Last4Digits]`).
-   - Bi-directional WebSockets for live chat between students and staff with deduplication guards.
-   - Post-session student satisfaction feedback with 1-to-5 star ratings.
-6. **Operational Telemetry & Metrics**:
-   - Protected `/api/v1/metrics` endpoint providing query counts, triage/cache hit ratios, escalation rates, token usage, and latency.
-
----
-
-## 📁 Repository Structure
-
-```text
-.
-├── backend/
-│   ├── app/
-│   │   ├── api/             # FastAPI routers (chat, telegram, metrics, escalation, health)
-│   │   ├── core/            # Config, logging, zero-hallucination prompts, frequent_issues.json
-│   │   ├── db/              # Async SQLAlchemy engine (academy.db)
-│   │   ├── models/          # Relational entities (telemetry, student CRM, escalations)
-│   │   ├── schemas/         # Pydantic v2 DTOs
-│   │   └── services/        # LangGraph workflow, triage engine, vector store, cache, LLM factory
-│   ├── data/
-│   │   ├── raw/             # Official Spanish business markdown documents
-│   │   └── chroma_db/       # Persistent ChromaDB vector database
-│   ├── scripts/             # Data generator, ingestion, and Telegram worker
-│   ├── tests/               # Unit and integration test suites with offline mock embeddings
-│   ├── Dockerfile           # Multi-stage production container (non-root)
-│   └── requirements.txt     # Python dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # React components in Spanish (Chat, Form, LiveAdvisor, AdminPortal)
-│   │   ├── services/        # API client service
-│   │   └── App.jsx          # Main application entrypoint
-│   ├── nginx.conf           # Nginx reverse proxy with WebSocket support
-│   ├── Dockerfile           # Multi-stage container with Nginx Alpine
-│   ├── package.json
-│   └── vite.config.js
-├── docs/                    # Architecture, API, Database, Rules, and ADR specs (in English)
-├── documentation/           # Daily changelogs and phase technical documentation
-├── docker-compose.yml       # Multi-container orchestration specification
-└── README.md
-```
 
 ---
 
 ## 🚀 Quick Start (Local Setup)
 
 ### 1. Prerequisites
-* Python 3.11+
-* Node.js 18+ and `npm`
+* Python 3.11+ (or Python 3.14 via `uv`)
+* Node.js 18+ and `pnpm` (or `npm`)
 * Git
 
 ### 2. Environment Configuration
@@ -133,29 +98,29 @@ python3 -m venv .venv
 source .venv/bin/activate  # Or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
 
-# Generate official academy business documents and ingest vectors
+# Ingest official academy documents
 python scripts/generate_academy_data.py
 python scripts/ingest.py
 
 # Launch FastAPI development server
 uvicorn app.main:app --reload --port 8000
 ```
-API Documentation will be available at `http://localhost:8000/api/v1/docs`.
+* **API Documentation:** `http://localhost:8000/api/v1/docs`
+* **Default Admin Login:** Username: `admin` | Password: `admin12345`
 
-### 4. Standalone Telegram Bot Worker (Optional)
-If running Telegram locally without webhooks or public tunneling:
+### 4. Standalone Resilient Telegram Bot Worker (Optional)
+If running Telegram locally without webhooks:
 ```bash
 python backend/scripts/telegram_worker.py
 ```
 
-### 5. Frontend Setup (pnpm v12)
+### 5. Frontend Setup
 ```bash
-# Install pnpm v12 globally if needed: npm install -g pnpm@12
 cd frontend
 pnpm install
 pnpm dev
 ```
-Open `http://localhost:5173` to interact with the web assistant.
+Open `http://localhost:5173` to experience the Vanguard Language Academy platform.
 
 ---
 

@@ -144,3 +144,91 @@ Returns active and waiting escalation sessions for staff. Requires `X-Admin-Key`
 
 ### `WebSocket /ws/chat/{session_id}`
 Establishes a bi-directional WebSocket connection between student and advisor for real-time consultation.
+
+---
+
+## 5. Authentication Endpoints
+
+### `POST /auth/login`
+Authenticates administrator credentials against the encrypted `admin_users` table and issues a JWT Bearer access token.
+
+#### Request Body
+```json
+{
+  "username": "admin",
+  "password": "your-secure-password"
+}
+```
+
+#### Response (200 OK)
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "username": "admin",
+    "role": "admin"
+  }
+}
+```
+
+### `GET /auth/me`
+Retrieves profile data of the currently authenticated administrator.
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+
+---
+
+## 6. Dynamic Provider Settings Endpoints
+
+### `GET /settings/providers`
+Fetches the current active LLM provider, configured API key states (masked), and supported models.
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>` or `X-Admin-Key: <ADMIN_KEY>`
+
+#### Response (200 OK)
+```json
+{
+  "active_provider": "gemini",
+  "gemini": {
+    "configured": true,
+    "model": "gemini-2.5-flash",
+    "masked_key": "AIzaSy...4xQp"
+  },
+  "groq": {
+    "configured": true,
+    "model": "llama-3.3-70b-versatile",
+    "masked_key": "gsk_...9Lm2"
+  },
+  "openai": {
+    "configured": true,
+    "model": "gpt-4o-mini",
+    "masked_key": "sk-proj-...kL8"
+  }
+}
+```
+
+### `POST /settings/providers`
+Updates the active provider and/or sets new API keys in runtime without restarting the server.
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>` or `X-Admin-Key: <ADMIN_KEY>`
+
+#### Request Body
+```json
+{
+  "active_provider": "groq",
+  "groq_api_key": "gsk_your_new_groq_key",
+  "gemini_api_key": null,
+  "openai_api_key": null
+}
+```
+
+---
+
+## 7. Visitor Conversation History Endpoints
+
+### `GET /conversations`
+Lists visitor chat sessions with summary metadata and message counters.
+* **Query Parameters:** `limit` (default: 50), `offset` (default: 0).
+* **Response:** Array of session objects (`session_id`, `channel`, `total_messages`, `created_at`, `updated_at`).
+
+### `GET /conversations/{session_id}`
+Retrieves the complete message transcript for an individual session.
+* **Response:** Array of messages (`id`, `role`, `content`, `status`, `confidence_score`, `sources`, `created_at`).

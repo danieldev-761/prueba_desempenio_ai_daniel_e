@@ -39,6 +39,10 @@ node_modules/
 *.log
 .DS_Store
 
-# Temporary reference directories
+# Temporary reference files & prompts
 backend_inspiracion/
 frontend_inspiracion/
+prompts_ui*.md
+ui_chatbot.html
+
+

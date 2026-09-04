@@ -16,10 +16,13 @@ else
     echo "[✓] Persistent ChromaDB vector index found at /app/data/chroma_db."
 fi
 
-# Launch Telegram worker in background if TELEGRAM_BOT_TOKEN is provided
+# Launch Telegram worker in background with automatic supervisor restart if TELEGRAM_BOT_TOKEN is provided
 if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ "$TELEGRAM_BOT_TOKEN" != "your_telegram_bot_token_here" ]; then
-    echo "[*] Launching Telegram Bot Polling Worker in background..."
-    python /app/scripts/telegram_worker.py &
+    echo "[*] Launching Resilient Telegram Bot Polling Worker with supervisor..."
+    (while true; do
+        python /app/scripts/telegram_worker.py || echo "[WARN] Telegram worker exited. Restarting in 5s..."
+        sleep 5
+    done) &
 fi
 
 # Launch Uvicorn production server
