@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage
@@ -19,6 +20,12 @@ class MockChatModel:
 
     def invoke(self, messages):
         return AIMessage(content=self.response_text)
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def initialize_test_db():
+    from app.db.session import init_db
+    await init_db()
 
 
 @pytest.fixture
