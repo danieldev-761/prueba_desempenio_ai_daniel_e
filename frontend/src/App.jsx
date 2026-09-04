@@ -5,14 +5,12 @@ import AdminPortal from './components/AdminPortal';
 
 export default function App() {
   const [currentView, setCurrentView] = useState(() => {
-    // Check URL hash or default to 'landing'
     const hash = window.location.hash.toLowerCase();
     if (hash === '#chat' || hash === '#assistant') return 'assistant';
     if (hash === '#admin') return 'admin';
     return 'landing';
   });
 
-  // Sync view with hash changes
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase();

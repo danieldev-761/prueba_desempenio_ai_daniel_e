@@ -25,19 +25,19 @@ class Settings(BaseSettings):
     # Google Gemini Settings (Primary Provider)
     GOOGLE_API_KEY: str = Field(default="", description="Google API Key alias")
     GEMINI_API_KEY: str = Field(default="", description="Google Gemini API Key")
-    GEMINI_CHAT_MODEL: str = "gemini-2.5-flash"
+    GEMINI_CHAT_MODEL: str = "gemini-3.1-flash-lite"
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     # Groq Settings
     GROQ_API_KEY: str = Field(default="", description="Groq API Key")
-    GROQ_CHAT_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_CHAT_MODEL: str = "llama-3.1-8b-instant"
 
     # Vector Database & Caching
     CHROMA_PERSIST_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "data" / "chroma_db")
     ACADEMY_COLLECTION_NAME: str = "academy_docs"
     CACHE_COLLECTION_NAME: str = "semantic_cache"
     CACHE_SIMILARITY_THRESHOLD: float = 0.74  # Cosine similarity >= 0.74 (Distance <= 0.26)
-    RETRIEVAL_SIMILARITY_THRESHOLD: float = 0.45
+    RETRIEVAL_SIMILARITY_THRESHOLD: float = 0.50
 
     # Relational Database / Telemetry
     DATABASE_URL: str = f"sqlite+aiosqlite:///{str(Path(__file__).resolve().parent.parent.parent / 'data' / 'academy.db')}"

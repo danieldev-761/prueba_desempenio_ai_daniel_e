@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.db.session import get_db_session
-from app.core.config import settings
-from app.core.logging import get_logger
 from app.models.escalation import EscalatedSession, LiveChatMessage, StudentProfile, SessionReview
+from app.models.admin_user import AdminUser
+from app.api.v1.endpoints.auth import get_current_admin
 from app.schemas.escalation import (
     EscalationStartRequest,
     EscalationStartResponse,
@@ -22,6 +22,7 @@ from app.schemas.escalation import (
 )
 from app.services.connection_manager import manager
 from app.services.telegram_service import send_telegram_message
+from app.core.logging import get_logger
 
 logger = get_logger("escalation_router")
 router = APIRouter()
@@ -133,16 +134,10 @@ async def start_escalation(
 
 @router.get("/sessions", response_model=List[EscalatedSessionResponse])
 async def list_escalated_sessions(
-    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db_session),
 ):
     """Admin endpoint to retrieve all active and pending escalation sessions."""
-    if not x_admin_key or x_admin_key != settings.ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales administrativas inválidas (X-Admin-Key).",
-        )
-
     stmt = select(EscalatedSession).order_by(EscalatedSession.created_at.desc())
     result = await db.execute(stmt)
     sessions = result.scalars().all()
@@ -174,18 +169,13 @@ async def get_session_messages(
 @router.post("/sessions/{session_id}/close")
 async def close_escalated_session(
     session_id: str,
-    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db_session),
 ):
     """
     Terminates an escalation session.
     Strict Rule: Only allowed if the advisor has sent at least one response in the session.
     """
-    if not x_admin_key or x_admin_key != settings.ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales administrativas inválidas (X-Admin-Key).",
-        )
 
     stmt = select(EscalatedSession).where(EscalatedSession.session_id == session_id)
     result = await db.execute(stmt)
@@ -277,16 +267,10 @@ async def submit_session_review(
 
 @router.get("/crm/profiles", response_model=List[StudentProfileResponse])
 async def list_crm_profiles(
-    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db_session),
 ):
     """Admin endpoint to retrieve all student profiles tracked in CRM."""
-    if not x_admin_key or x_admin_key != settings.ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales administrativas inválidas (X-Admin-Key).",
-        )
-
     stmt = select(StudentProfile).order_by(StudentProfile.last_interaction_at.desc())
     res = await db.execute(stmt)
     return res.scalars().all()
@@ -294,16 +278,10 @@ async def list_crm_profiles(
 
 @router.get("/crm/reviews", response_model=List[SessionReviewResponse])
 async def list_crm_reviews(
-    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db_session),
 ):
     """Admin endpoint to retrieve all customer service reviews."""
-    if not x_admin_key or x_admin_key != settings.ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales administrativas inválidas (X-Admin-Key).",
-        )
-
     stmt = select(SessionReview).order_by(SessionReview.created_at.desc())
     res = await db.execute(stmt)
     return res.scalars().all()
@@ -311,16 +289,10 @@ async def list_crm_reviews(
 
 @router.get("/crm/summary", response_model=CRMSummaryResponse)
 async def get_crm_summary(
-    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db_session),
 ):
     """Admin endpoint to retrieve CRM & Satisfaction metrics summary."""
-    if not x_admin_key or x_admin_key != settings.ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales administrativas inválidas (X-Admin-Key).",
-        )
-
     # Count profiles
     stmt_prof = select(StudentProfile)
     res_prof = await db.execute(stmt_prof)
@@ -352,15 +324,10 @@ async def get_crm_summary(
 @router.post("/telegram/reply")
 async def reply_telegram_student(
     payload: TelegramReplyRequest,
-    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db_session),
 ):
     """Allows staff to send direct message to a Telegram student chat ID from the Admin Portal."""
-    if not x_admin_key or x_admin_key != settings.ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales administrativas inválidas (X-Admin-Key).",
-        )
 
     if payload.session_id:
         chat_msg = LiveChatMessage(

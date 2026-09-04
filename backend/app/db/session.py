@@ -70,13 +70,29 @@ async def init_db() -> None:
             # Seed LLM Provider settings if not present
             provider_stmt = select(SystemSetting).where(SystemSetting.key == "ACTIVE_LLM_PROVIDER")
             res_p = await session.execute(provider_stmt)
-            if not res_p.scalars().first():
+            prov_setting = res_p.scalars().first()
+            if not prov_setting:
                 session.add(SystemSetting(
                     key="ACTIVE_LLM_PROVIDER",
-                    value=settings.LLM_PROVIDER or "gemini",
+                    value="gemini",
                     description="Active LLM provider (gemini, groq, openai)",
                     is_secret=False
                 ))
+            elif prov_setting.value != "gemini" and bool(settings.GEMINI_API_KEY or settings.GOOGLE_API_KEY):
+                prov_setting.value = "gemini"
+
+            # Check and seed GEMINI_API_KEY if present in environment
+            gemini_key = settings.GEMINI_API_KEY or settings.GOOGLE_API_KEY
+            if gemini_key:
+                gkey_stmt = select(SystemSetting).where(SystemSetting.key == "GEMINI_API_KEY")
+                res_g = await session.execute(gkey_stmt)
+                if not res_g.scalars().first():
+                    session.add(SystemSetting(
+                        key="GEMINI_API_KEY",
+                        value=gemini_key,
+                        description="Google Gemini API Key from environment",
+                        is_secret=True
+                    ))
 
             await session.commit()
         except Exception as e:

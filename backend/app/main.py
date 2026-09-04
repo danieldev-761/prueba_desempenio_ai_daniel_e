@@ -12,6 +12,15 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}...")
     await init_db()
     logger.info("Database schemas confirmed.")
+    try:
+        from app.services.vector_store import VectorStoreService
+        from scripts.ingest import run_ingestion
+        vs = VectorStoreService()
+        if vs.get_collection_count() == 0:
+            logger.info("Vector collection is empty on startup. Triggering auto-ingestion...")
+            run_ingestion(reset=True)
+    except Exception as e:
+        logger.warning(f"Vector store startup check note: {e}")
     yield
     logger.info(f"Shutting down {settings.PROJECT_NAME}...")
 

@@ -27,105 +27,92 @@ export async function adminLogin(username, password) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({
+      username: username.trim(),
+      password,
+    }),
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Credenciales inválidas.');
+    throw new Error(errorData.detail || 'Usuario o contraseña incorrectos.');
   }
 
   return response.json();
 }
 
-export async function getProviderSettings(tokenOrKey) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (tokenOrKey) {
-    if (tokenOrKey.startsWith('ey') || tokenOrKey.length > 30) {
-      headers['Authorization'] = `Bearer ${tokenOrKey}`;
-    } else {
-      headers['X-Admin-Key'] = tokenOrKey;
-    }
+function getAuthHeaders(adminKeyOrToken) {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (adminKeyOrToken) {
+    headers['Authorization'] = `Bearer ${adminKeyOrToken}`;
+    headers['X-Admin-Key'] = adminKeyOrToken;
   }
+  return headers;
+}
 
+export async function getProviderSettings(adminKey) {
   const response = await fetch(`${API_BASE_URL}/settings/providers`, {
     method: 'GET',
-    headers,
+    headers: getAuthHeaders(adminKey),
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Error al obtener configuración de proveedores');
+    throw new Error('Error al cargar configuración de proveedores.');
   }
 
   return response.json();
 }
 
-export async function updateProviderSettings(tokenOrKey, payload) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (tokenOrKey) {
-    if (tokenOrKey.startsWith('ey') || tokenOrKey.length > 30) {
-      headers['Authorization'] = `Bearer ${tokenOrKey}`;
-    } else {
-      headers['X-Admin-Key'] = tokenOrKey;
-    }
-  }
-
+export async function updateProviderSettings(adminKey, settingsPayload) {
   const response = await fetch(`${API_BASE_URL}/settings/providers`, {
     method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
+    headers: getAuthHeaders(adminKey),
+    body: JSON.stringify(settingsPayload),
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Error al actualizar proveedores de IA');
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Error al actualizar configuración.');
   }
 
   return response.json();
 }
 
-export async function getVisitorConversations(limit = 50, offset = 0) {
-  const response = await fetch(`${API_BASE_URL}/conversations?limit=${limit}&offset=${offset}`);
+export async function testProviderConnection(adminKey, provider, apiKey = null) {
+  const response = await fetch(`${API_BASE_URL}/settings/providers/test`, {
+    method: 'POST',
+    headers: getAuthHeaders(adminKey),
+    body: JSON.stringify({
+      provider,
+      api_key: apiKey || null,
+    }),
+  });
+
   if (!response.ok) {
-    throw new Error('Error al cargar conversaciones de visitantes');
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Fallo al verificar proveedor.');
   }
+
   return response.json();
 }
 
-export async function getVisitorConversationTranscript(sessionId) {
-  const response = await fetch(`${API_BASE_URL}/conversations/${sessionId}`);
-  if (!response.ok) {
-    throw new Error('Error al cargar mensajes de la conversación');
-  }
-  return response.json();
-}
-
-export async function getAdminMetrics(tokenOrKey) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (tokenOrKey) {
-    if (tokenOrKey.startsWith('ey') || tokenOrKey.length > 30) {
-      headers['Authorization'] = `Bearer ${tokenOrKey}`;
-    } else {
-      headers['X-Admin-Key'] = tokenOrKey;
-    }
-  }
-
+export async function getAdminMetrics(adminKey) {
   const response = await fetch(`${API_BASE_URL}/metrics`, {
     method: 'GET',
-    headers,
+    headers: getAuthHeaders(adminKey),
   });
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 422) {
-      throw new Error('No autorizado. Inicia sesión con tus credenciales.');
+      throw new Error('Clave de Administrador inválida. Acceso Denegado.');
     }
     throw new Error(`Error al obtener métricas (${response.status})`);
   }
 
   return response.json();
 }
-
 
 export async function startEscalationSession(fullName, nationalId, initialInquiry = '', channel = 'web', telegramChatId = null) {
   const response = await fetch(`${API_BASE_URL}/escalation/start`, {
@@ -153,10 +140,7 @@ export async function startEscalationSession(fullName, nationalId, initialInquir
 export async function getEscalatedSessions(adminKey) {
   const response = await fetch(`${API_BASE_URL}/escalation/sessions`, {
     method: 'GET',
-    headers: {
-      'X-Admin-Key': adminKey,
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(adminKey),
   });
 
   if (!response.ok) {
@@ -177,10 +161,7 @@ export async function getSessionMessages(sessionId) {
 export async function replyTelegramStudent(adminKey, telegramChatId, message, sessionId = null) {
   const response = await fetch(`${API_BASE_URL}/escalation/telegram/reply`, {
     method: 'POST',
-    headers: {
-      'X-Admin-Key': adminKey,
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(adminKey),
     body: JSON.stringify({
       telegram_chat_id: telegramChatId,
       message,
@@ -199,10 +180,7 @@ export async function replyTelegramStudent(adminKey, telegramChatId, message, se
 export async function closeEscalationSession(adminKey, sessionId) {
   const response = await fetch(`${API_BASE_URL}/escalation/sessions/${sessionId}/close`, {
     method: 'POST',
-    headers: {
-      'X-Admin-Key': adminKey,
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(adminKey),
   });
 
   if (!response.ok) {
@@ -235,10 +213,7 @@ export async function submitSessionReview(sessionId, rating, notes = '') {
 
 export async function getCRMProfiles(adminKey) {
   const response = await fetch(`${API_BASE_URL}/escalation/crm/profiles`, {
-    headers: {
-      'X-Admin-Key': adminKey,
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(adminKey),
   });
   if (!response.ok) throw new Error('Error al cargar perfiles CRM');
   return response.json();
@@ -246,10 +221,7 @@ export async function getCRMProfiles(adminKey) {
 
 export async function getCRMReviews(adminKey) {
   const response = await fetch(`${API_BASE_URL}/escalation/crm/reviews`, {
-    headers: {
-      'X-Admin-Key': adminKey,
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(adminKey),
   });
   if (!response.ok) throw new Error('Error al cargar reseñas CRM');
   return response.json();
@@ -257,10 +229,7 @@ export async function getCRMReviews(adminKey) {
 
 export async function getCRMSummary(adminKey) {
   const response = await fetch(`${API_BASE_URL}/escalation/crm/summary`, {
-    headers: {
-      'X-Admin-Key': adminKey,
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(adminKey),
   });
   if (!response.ok) throw new Error('Error al cargar resumen CRM');
   return response.json();

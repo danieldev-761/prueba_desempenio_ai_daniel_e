@@ -131,11 +131,15 @@ class AcademyGraphWorkflow:
         query = state["query"]
         logger.info(f"LangGraph Node: node_retrieve for query: '{query[:40]}...'")
 
-        results = self.vector_store_service.similarity_search_with_relevance_scores(
-            query=query,
-            k=4,
-            score_threshold=0.0,  # Fetch top-k first; conditional edge gates on max score
-        )
+        try:
+            results = self.vector_store_service.similarity_search_with_relevance_scores(
+                query=query,
+                k=4,
+                score_threshold=0.0,  # Fetch top-k first; conditional edge gates on max score
+            )
+        except Exception as e:
+            logger.error(f"Vector retrieval exception in node_retrieve: {e}", exc_info=True)
+            results = []
 
         if not results:
             return {
@@ -185,37 +189,49 @@ class AcademyGraphWorkflow:
 
         messages.append(HumanMessage(content=query))
 
-        model = self._get_chat_model()
-        response = model.invoke(messages)
-        
-        # Handle string vs list of content parts (e.g. Gemini [{'type': 'text', 'text': '...'}])
-        raw_content = getattr(response, "content", response)
-        if isinstance(raw_content, list):
-            content = "".join([
-                part.get("text", "") if isinstance(part, dict) else str(part)
-                for part in raw_content
-            ]).strip()
-        else:
-            content = str(raw_content).strip()
+        try:
+            model = self._get_chat_model()
+            response = model.invoke(messages)
+            
+            # Handle string vs list of content parts (e.g. Gemini [{'type': 'text', 'text': '...'}])
+            raw_content = getattr(response, "content", response)
+            if isinstance(raw_content, list):
+                content = "".join([
+                    part.get("text", "") if isinstance(part, dict) else str(part)
+                    for part in raw_content
+                ]).strip()
+            else:
+                content = str(raw_content).strip()
 
-        # Token usage extraction
-        token_usage = getattr(response, "usage_metadata", None) or getattr(response, "response_metadata", {}).get("token_usage", {})
-        prompt_tokens = token_usage.get("prompt_tokens") or token_usage.get("input_tokens") or 0
-        comp_tokens = token_usage.get("completion_tokens") or token_usage.get("output_tokens") or 0
-        total_tokens = prompt_tokens + comp_tokens
+            # Token usage extraction
+            token_usage = getattr(response, "usage_metadata", None) or getattr(response, "response_metadata", {}).get("token_usage", {})
+            prompt_tokens = token_usage.get("prompt_tokens") or token_usage.get("input_tokens") or 0
+            comp_tokens = token_usage.get("completion_tokens") or token_usage.get("output_tokens") or 0
+            total_tokens = prompt_tokens + comp_tokens
 
-        # Estimated cost calculation ($0.15/1M input, $0.60/1M output for mini/flash)
-        cost_usd = (prompt_tokens * 0.00000015) + (comp_tokens * 0.00000060)
+            # Estimated cost calculation ($0.15/1M input, $0.60/1M output for mini/flash)
+            cost_usd = (prompt_tokens * 0.00000015) + (comp_tokens * 0.00000060)
 
-        return {
-            "generation": content,
-            "token_metrics": {
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": comp_tokens,
-                "total_tokens": total_tokens,
-                "cost_usd": round(cost_usd, 6),
-            },
-        }
+            return {
+                "generation": content,
+                "token_metrics": {
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": comp_tokens,
+                    "total_tokens": total_tokens,
+                    "cost_usd": round(cost_usd, 6),
+                },
+            }
+        except Exception as e:
+            logger.error(f"Error invoking LLM in node_generate: {e}", exc_info=True)
+            return {
+                "generation": "En este momento estamos experimentando una breve intermitencia en la generación con IA. He transferido tu consulta a nuestro Equipo de Asesoría Académica. [[ESCALATE]]",
+                "token_metrics": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0,
+                    "cost_usd": 0.0,
+                },
+            }
 
     # --- NODE 4: Grounding & Escalation Verifier ---
     def node_verify_grounding(self, state: AgentState) -> Dict[str, Any]:

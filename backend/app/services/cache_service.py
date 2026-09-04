@@ -47,7 +47,9 @@ class SemanticCacheService:
         self.similarity_threshold = similarity_threshold or settings.CACHE_SIMILARITY_THRESHOLD
         # Cosine distance in Chroma: distance = 1 - cosine_similarity
         self.max_distance = round(1.0 - self.similarity_threshold, 4)
+        self._init_client_and_store()
 
+    def _init_client_and_store(self) -> None:
         Path(self.persist_directory).mkdir(parents=True, exist_ok=True)
         self._client = chromadb.PersistentClient(path=self.persist_directory)
         self._vector_store = Chroma(
@@ -56,16 +58,20 @@ class SemanticCacheService:
             embedding_function=self.embeddings,
             collection_metadata={"hnsw:space": "cosine"},
         )
-        logger.info(
-            f"SemanticCacheService initialized: collection='{self.collection_name}', min_similarity={self.similarity_threshold} (max_distance={self.max_distance})"
-        )
 
     @property
     def collection(self):
-        return self._client.get_or_create_collection(
-            name=self.collection_name,
-            metadata={"hnsw:space": "cosine"},
-        )
+        try:
+            return self._client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
+        except Exception:
+            self._init_client_and_store()
+            return self._client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
 
     def lookup(self, query: str) -> Optional[Dict[str, Any]]:
         """
@@ -80,8 +86,12 @@ class SemanticCacheService:
 
         try:
             norm_q = normalize_cache_key(query)
-            # Query vector store for nearest match with raw cosine distance
-            results = self._vector_store.similarity_search_with_score(norm_q, k=1)
+            try:
+                results = self._vector_store.similarity_search_with_score(norm_q, k=1)
+            except Exception as e:
+                logger.warning(f"Cache similarity search exception ({e}), refreshing cache client...")
+                self._init_client_and_store()
+                results = self._vector_store.similarity_search_with_score(norm_q, k=1)
             if not results:
                 return None
 

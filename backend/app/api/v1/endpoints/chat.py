@@ -20,6 +20,26 @@ def get_workflow() -> AcademyGraphWorkflow:
     return _workflow_instance
 
 
+import re
+
+def sanitize_response_text(text: str) -> str:
+    """
+    Cleans raw internal tokens, control characters, raw asterisks, and formatting leaks from the final response.
+    """
+    if not text:
+        return ""
+    cleaned = text.replace("[[ESCALATE]]", "").replace("[NO_INFO]", "")
+    # Remove bold/italic markdown asterisks (**text** -> text, *text* -> text, ***text*** -> text)
+    cleaned = re.sub(r"\*{1,3}([^*\n]+)\*{1,3}", r"\1", cleaned)
+    # Convert markdown bullet asterisks to clean bullet points
+    cleaned = re.sub(r"^\s*\*\s+", r"• ", cleaned, flags=re.MULTILINE)
+    # Remove any remaining lone asterisks
+    cleaned = cleaned.replace("*", "")
+    # Remove unwanted ASCII control characters but keep standard whitespaces
+    cleaned = "".join(ch for ch in cleaned if ch == "\n" or ch == "\t" or ch == "\r" or ord(ch) >= 32)
+    return cleaned.strip()
+
+
 @router.post(
     "/chat",
     response_model=ChatResponse,
@@ -42,6 +62,9 @@ async def chat_completion(
             channel=channel,
         )
 
+        raw_generation = state.get("generation", "")
+        clean_generation = sanitize_response_text(raw_generation)
+
         sources = [
             SourceCitation(
                 document=s.get("document", "cursos_y_modalidades.md"),
@@ -62,7 +85,7 @@ async def chat_completion(
             session_id=session_id,
             channel=channel,
             user_query=payload.query,
-            bot_response=state.get("generation", ""),
+            bot_response=clean_generation,
             status=state.get("status", "RESOLVED_BY_RAG"),
             escalation_reason=state.get("escalation_reason"),
             latency_ms=latency_ms,
@@ -106,7 +129,7 @@ async def chat_completion(
         db.add(ChatMessageRecord(
             session_id=session_id,
             sender="assistant",
-            content=state.get("generation", ""),
+            content=clean_generation,
             status=state.get("status", "RESOLVED_BY_RAG"),
             sources_json=json.dumps(sources_data, ensure_ascii=False) if sources_data else None,
             confidence_score=state.get("relevance_score", 0.0),
@@ -116,7 +139,7 @@ async def chat_completion(
         await db.commit()
 
         return ChatResponse(
-            response=state.get("generation", ""),
+            response=clean_generation,
             status=state.get("status", "RESOLVED_BY_RAG"),
             confidence_score=state.get("relevance_score", 0.0),
             sources=sources,
@@ -128,7 +151,19 @@ async def chat_completion(
         )
     except Exception as e:
         logger.error(f"Error executing chat completion: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process inquiry: {str(e)}",
+        # Graceful fallback without leaking technical DB or collection traces
+        fallback_msg = (
+            "En este momento estamos experimentando una breve intermitencia en el servicio de consulta. "
+            "Por favor intenta de nuevo con tu pregunta o solicita conexión con un asesor humano para ayudarte de inmediato."
+        )
+        return ChatResponse(
+            response=fallback_msg,
+            status="ERROR_FALLBACK",
+            confidence_score=0.0,
+            sources=[],
+            escalated=False,
+            telemetry=ChatTelemetry(
+                latency_ms=0.0,
+                cost_usd=0.0,
+            ),
         )

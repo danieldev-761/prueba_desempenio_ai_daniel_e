@@ -58,6 +58,27 @@ EXHAUSTION_PATTERNS = [
     re.compile(r"atenci[oó]n\s+humana", re.IGNORECASE),
 ]
 
+# Fast Out-of-Scope and Closed-Catalog Classifiers (ADR-011, ADR-012)
+UNSUPPORTED_LANGUAGES = ["ruso", "japones", "japonesa", "mandarin", "chino", "arabe", "coreano", "hebreo", "polaco", "sueco", "holandes", "turco", "griego", "latin", "guarani", "esperanto"]
+SUPPORTED_LANG_KEYS = ["ingles", "frances", "aleman", "italiano", "portugues"]
+
+UNSUPPORTED_CITIES = ["cali", "barranquilla", "cartagena", "bucaramanga", "pereira", "manizales", "cucuta", "santa marta", "ibague", "villavicencio", "pasto", "armenia", "popayan", "neiva", "valledupar", "monteria", "sincelejo"]
+SUPPORTED_CAMPUSES = ["bogota", "medellin"]
+
+UNSUPPORTED_PAYMENT_TERMS = ["cripto", "bitcoin", "usdt", "ethereum", "btc", "cheque", "fiado", "pagar despues"]
+
+OUT_OF_DOMAIN_PATTERNS = [
+    re.compile(r"\b(chiste|chistes|broma|cuentame un chiste|hazme reir)\b", re.IGNORECASE),
+    re.compile(r"\b(receta|cocinar|ingredientes|como hacer arroz|comida tipica)\b", re.IGNORECASE),
+    re.compile(r"\b(futbol|partido|quien gano|campeonato|gol|champions|messi|cr7|seleccion colombia)\b", re.IGNORECASE),
+    re.compile(r"\b(clima|pronostico del tiempo|va a llover)\b", re.IGNORECASE),
+    re.compile(r"\b(horoscopo|signo zodiacal|astrologia|tarot)\b", re.IGNORECASE),
+    re.compile(r"\b(politica|presidente|elecciones|alcalde|senado|partido politico)\b", re.IGNORECASE),
+    re.compile(r"\b(escribe un codigo|python script|desarrollame una app|hackear|sql injection)\b", re.IGNORECASE),
+    re.compile(r"\b(diagnostico medico|dolor de cabeza|sintomas de|remedio casero)\b", re.IGNORECASE),
+    re.compile(r"\b(cancion|poema|escribe una historia|inventa un cuento|letra de)\b", re.IGNORECASE),
+]
+
 
 class FrequentIssuesService:
     """
@@ -127,6 +148,100 @@ class FrequentIssuesService:
         norm_query = normalize_text(query)
         sess_key = session_id or "default_session"
         prev_state = self._session_state.get(sess_key)
+
+        # --- STEP 0: ZERO-TOKEN FAST DOMAIN & CLOSED CATALOG GUARDS (<1ms) ---
+        # 0.1: Out-of-Domain Non-Academic Topics
+        for pattern in OUT_OF_DOMAIN_PATTERNS:
+            if pattern.search(query) or pattern.search(norm_query):
+                logger.info(f"Fast Guard: Out-of-domain pattern matched '{pattern.pattern}'")
+                return {
+                    "category": "out_of_domain",
+                    "title": "Alcance Académico Institucional",
+                    "response": (
+                        "En la Academia de Idiomas Colombiana nos especializamos exclusivamente en programas académicos de idiomas "
+                        "(**Inglés**, **Francés**, **Alemán**, **Italiano** y **Portugués**), preparación para exámenes internacionales y certificaciones oficiales. "
+                        "¿Sobre cuál de nuestros programas de idiomas te gustaría recibir información?"
+                    ),
+                    "matched_rule": "out_of_domain_guard",
+                    "tier": 1,
+                    "is_escalate": False,
+                }
+
+        # 0.2: Unsupported Languages Catalog Negation
+        words = set(norm_query.split())
+        matched_unsupported_lang = [lang for lang in UNSUPPORTED_LANGUAGES if lang in words or f" {lang} " in f" {norm_query} "]
+        has_supported_lang = any(lang in norm_query for lang in SUPPORTED_LANG_KEYS)
+        if matched_unsupported_lang and not has_supported_lang:
+            logger.info(f"Fast Guard: Unsupported language '{matched_unsupported_lang[0]}' matched")
+            return {
+                "category": "unsupported_language",
+                "title": "Catálogo Oficial de Idiomas",
+                "response": (
+                    f"Actualmente la Academia de Idiomas Colombiana no ofrece cursos de **{matched_unsupported_lang[0].capitalize()}**. "
+                    "Nuestra oferta oficial incluye 5 idiomas: **Inglés** (General y Negocios), **Francés**, **Alemán**, **Italiano** y **Portugués brasileño**, "
+                    "además de preparación para exámenes internacionales (IELTS, TOEFL, Cambridge, DELF y Goethe)."
+                ),
+                "matched_rule": "unsupported_lang_guard",
+                "tier": 1,
+                "is_escalate": False,
+            }
+
+        # 0.3: Unsupported Cities / Physical Campuses
+        matched_unsupported_city = [city for city in UNSUPPORTED_CITIES if city in words or f" {city} " in f" {norm_query} "]
+        has_supported_campus = any(campus in norm_query for campus in SUPPORTED_CAMPUSES)
+        if matched_unsupported_city and not has_supported_campus and ("sede" in norm_query or "presencial" in norm_query or "donde" in norm_query or "ciudad" in norm_query):
+            logger.info(f"Fast Guard: Unsupported city '{matched_unsupported_city[0]}' matched")
+            return {
+                "category": "unsupported_city",
+                "title": "Sedes Presenciales y Cobertura Virtual",
+                "response": (
+                    f"No contamos con sede física presencial en **{matched_unsupported_city[0].capitalize()}**. "
+                    "Nuestras sedes presenciales oficiales están ubicadas en **Bogotá** (Sede Chicó Norte) y **Medellín** (Sede El Poblado). "
+                    "Para {matched_unsupported_city[0].capitalize()} y todo el territorio nacional disponemos de **Modalidad 100% Virtual con Clases en Vivo**, "
+                    "con los mismos horarios, niveles del MCER y docentes certificados."
+                ),
+                "matched_rule": "unsupported_city_guard",
+                "tier": 1,
+                "is_escalate": False,
+            }
+
+        # 0.4: Unsupported Payment Methods
+        matched_unsupported_pay = [pay for pay in UNSUPPORTED_PAYMENT_TERMS if pay in words or f" {pay} " in f" {norm_query} "]
+        if matched_unsupported_pay:
+            logger.info(f"Fast Guard: Unsupported payment term '{matched_unsupported_pay[0]}' matched")
+            return {
+                "category": "unsupported_payment",
+                "title": "Medios Oficiales de Pago",
+                "response": (
+                    "No aceptamos pagos en criptomonedas, cheques ni diferidos no bancarizados. "
+                    "Nuestros canales autorizados son: **PSE**, **Nequi**, **Daviplata**, **Tarjetas de Crédito/Débito** (Visa, MasterCard, Amex), "
+                    "corresponsales bancarios (**Bancolombia, Efecty, SuRed**) y pasarela internacional (**Stripe / PayPal**)."
+                ),
+                "matched_rule": "unsupported_payment_guard",
+                "tier": 1,
+                "is_escalate": False,
+            }
+
+        # 0.5: Gibberish / Meaningless Noise
+        vowels = sum(1 for c in norm_query if c in "aeiou")
+        consonants = sum(1 for c in norm_query if c in "bcdfghjklmnpqrstvwxyz")
+        total_letters = vowels + consonants
+        is_keyboard_mash = bool(re.search(r"(asdf|qwer|zxcv|hjkl|1234|aaaa|zzzz|xxxx)", norm_query))
+        is_low_vowel_ratio = total_letters >= 4 and (vowels == 0 or (consonants > 0 and (vowels / total_letters) < 0.20))
+
+        if len(norm_query) < 2 or is_keyboard_mash or is_low_vowel_ratio:
+            logger.info(f"Fast Guard: Gibberish/Noise input detected '{norm_query}'")
+            return {
+                "category": "gibberish_input",
+                "title": "Atención al Estudiante",
+                "response": (
+                    "No logramos comprender tu consulta. Por favor escribe tu pregunta sobre nuestros cursos de idiomas, tarifas, horarios, sedes o certificaciones "
+                    "y con gusto te brindaremos toda la información oficial."
+                ),
+                "matched_rule": "noise_guard",
+                "tier": 1,
+                "is_escalate": False,
+            }
 
         # --- STEP 1: CHECK FOR TIER 3 EXHAUSTION (Gated Escalation) ---
         # Tier 3 is strictly gated: only triggered when the user has ALREADY undergone Tier 2 diagnostics!

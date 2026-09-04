@@ -62,7 +62,7 @@ def get_chat_model(
         try:
             from langchain_groq import ChatGroq
             return ChatGroq(
-                model=settings.GROQ_CHAT_MODEL or "llama-3.3-70b-versatile",
+                model=settings.GROQ_CHAT_MODEL or "llama-3.1-8b-instant",
                 groq_api_key=api_key,
                 temperature=temperature,
             )
@@ -117,18 +117,44 @@ def get_chat_model(
 
 
 
+class CachedEmbeddingsWrapper(Embeddings):
+    """
+    LRU in-memory query embedding cache wrapper.
+    Eliminates redundant network roundtrips between semantic cache and vector retrieval.
+    """
+    def __init__(self, base_embeddings: Embeddings, max_size: int = 256):
+        self.base_embeddings = base_embeddings
+        self._cache: dict[str, list[float]] = {}
+        self._max_size = max_size
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return self.base_embeddings.embed_documents(texts)
+
+    def embed_query(self, text: str) -> list[float]:
+        norm_key = text.strip().lower()
+        if norm_key in self._cache:
+            return self._cache[norm_key]
+        emb = self.base_embeddings.embed_query(text)
+        if len(self._cache) >= self._max_size:
+            # Evict oldest entry
+            self._cache.pop(next(iter(self._cache)))
+        self._cache[norm_key] = emb
+        return emb
+
+
 def get_embeddings_model(
     provider: Optional[str] = None,
 ) -> Embeddings:
     """
-    Factory creating an embeddings model instance based on the specified or configured provider.
+    Factory creating a cached embeddings model instance based on the specified or configured provider.
     Supports 'openai' and 'gemini'.
     """
     selected_provider = (provider or settings.LLM_PROVIDER).lower()
 
     if selected_provider == "gemini":
         api_key = (
-            settings.GEMINI_API_KEY
+            RUNTIME_OVERRIDES["gemini_api_key"]
+            or settings.GEMINI_API_KEY
             or settings.GOOGLE_API_KEY
             or os.getenv("GEMINI_API_KEY", "")
             or os.getenv("GOOGLE_API_KEY", "")
@@ -141,24 +167,30 @@ def get_embeddings_model(
             )
         try:
             from langchain_google_genai import GoogleGenerativeAIEmbeddings
-            return GoogleGenerativeAIEmbeddings(
+            base_emb = GoogleGenerativeAIEmbeddings(
                 model=settings.GEMINI_EMBEDDING_MODEL,
                 google_api_key=api_key,
             )
+            return CachedEmbeddingsWrapper(base_emb)
         except Exception as e:
             logger.error(f"Failed to initialize GoogleGenerativeAIEmbeddings: {e}")
             raise
 
     # Default to OpenAI
-    api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
+    api_key = (
+        RUNTIME_OVERRIDES["openai_api_key"]
+        or settings.OPENAI_API_KEY
+        or os.getenv("OPENAI_API_KEY", "")
+    )
     if not api_key:
         logger.warning("OPENAI_API_KEY is not set. OpenAI embeddings may fail if invoked without key.")
     try:
         from langchain_openai import OpenAIEmbeddings
-        return OpenAIEmbeddings(
+        base_emb = OpenAIEmbeddings(
             model=settings.OPENAI_EMBEDDING_MODEL,
             api_key=api_key,
         )
+        return CachedEmbeddingsWrapper(base_emb)
     except Exception as e:
         logger.error(f"Failed to initialize OpenAIEmbeddings: {e}")
         raise

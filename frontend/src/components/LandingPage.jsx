@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaGlobeAmericas, FaMapMarkerAlt, FaCreditCard, FaGraduationCap, 
   FaClock, FaCheckCircle, FaLaptopHouse, FaSchool, FaCertificate, 
@@ -10,7 +10,10 @@ import {
 } from 'react-icons/si';
 import GhostCursor from './GhostCursor';
 
+const TELEGRAM_BOT_URL = 'https://t.me/CL_Academy_bot';
+
 export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
+  const [activeSection, setActiveSection] = useState('inicio');
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -19,6 +22,29 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
     modality: '100% Virtual en Vivo',
   });
   const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // Dynamic active section observer on scroll
+  useEffect(() => {
+    const sectionIds = ['inicio', 'programas', 'modalidades', 'horarios', 'precios', 'placement-test'];
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 180;
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPos >= top && scrollPos < top + height) {
+            setActiveSection(id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -29,9 +55,9 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
     <div className="bg-[#070515] text-slate-200 min-h-screen flex flex-col font-sans relative overflow-x-hidden selection:bg-brand-lime selection:text-brand-dark">
       
       {/* ================= TOP NAVIGATION ================= */}
-      <header className="sticky top-0 z-50 w-full bg-[#070515]/85 backdrop-blur-md border-b border-white/10 transition-all">
-        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-3 group">
+      <header className="sticky top-0 z-50 w-full bg-[#070515]/90 backdrop-blur-md border-b border-white/10 transition-all">
+        <div className="max-w-7xl mx-auto px-5 py-3.5 flex items-center justify-between">
+          <a href="#inicio" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-brand-lime text-brand-dark flex items-center justify-center font-bold shadow-lg shadow-brand-lime/20 group-hover:scale-105 transition-transform">
               <FaGraduationCap className="text-xl" />
             </div>
@@ -41,37 +67,84 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             </div>
           </a>
 
-          {/* Nav links */}
-          <nav className="hidden lg:flex items-center gap-8 bg-white/5 px-6 py-2 rounded-full border border-white/10 text-sm font-medium">
-            <a href="#programas" className="hover:text-brand-lime transition-colors">Idiomas & MCER</a>
-            <a href="#modalidades" className="hover:text-brand-lime transition-colors">Sedes & Modalidades</a>
-            <a href="#horarios" className="hover:text-brand-lime transition-colors">Horarios</a>
-            <a href="#precios" className="hover:text-brand-lime transition-colors">Precios COP</a>
-            <a href="#placement-test" className="hover:text-brand-lime transition-colors text-brand-lime">Placement Test</a>
+          {/* Nav links with active indicator */}
+          <nav className="hidden lg:flex items-center gap-6 bg-white/5 px-6 py-2 rounded-full border border-white/10 text-sm font-medium">
+            <a 
+              href="#programas" 
+              className={`transition-colors py-1 px-2.5 rounded-full ${
+                activeSection === 'programas' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Idiomas & MCER
+            </a>
+            <a 
+              href="#modalidades" 
+              className={`transition-colors py-1 px-2.5 rounded-full ${
+                activeSection === 'modalidades' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Sedes & Modalidades
+            </a>
+            <a 
+              href="#horarios" 
+              className={`transition-colors py-1 px-2.5 rounded-full ${
+                activeSection === 'horarios' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Horarios
+            </a>
+            <a 
+              href="#precios" 
+              className={`transition-colors py-1 px-2.5 rounded-full ${
+                activeSection === 'precios' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Precios COP
+            </a>
+            <a 
+              href="#placement-test" 
+              className={`transition-colors py-1 px-2.5 rounded-full ${
+                activeSection === 'placement-test' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-brand-lime/90 hover:text-brand-lime'
+              }`}
+            >
+              Placement Test
+            </a>
           </nav>
 
-          {/* Action buttons */}
+          {/* Action buttons including Telegram */}
           <div className="flex items-center gap-3">
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-[#229ED9] hover:bg-[#1e8ec3] text-white px-4 py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all hover:scale-105 shadow-md shadow-[#229ED9]/20"
+              title="Abrir Bot en Telegram"
+            >
+              <FaTelegramPlane className="text-base" />
+              <span className="hidden sm:inline">Bot Telegram</span>
+            </a>
+
             <button
               onClick={onNavigateToChat}
-              className="flex items-center gap-2 bg-brand-lime hover:bg-[#b0f55c] text-brand-dark px-5 py-2.5 rounded-full font-bold text-sm transition-all hover:scale-105 shadow-md shadow-brand-lime/20"
+              className="flex items-center gap-2 bg-brand-lime hover:bg-[#b0f55c] text-brand-dark px-4 sm:px-5 py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all hover:scale-105 shadow-md shadow-brand-lime/20"
             >
               <FaRobot className="text-base" />
-              <span>Vanguard Assistant</span>
+              <span>Vanguard AI</span>
             </button>
+
             <button
               onClick={onNavigateToAdmin}
-              className="text-xs px-3.5 py-2 rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-colors"
+              className="text-xs px-3 py-2 rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-colors"
             >
-              Staff Portal
+              Staff
             </button>
           </div>
         </div>
       </header>
 
       {/* ================= HERO SECTION WITH GHOSTCURSOR ================= */}
-      <section className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-5 pt-12 pb-20 overflow-hidden bg-gradient-to-b from-[#070515] via-[#0c0926] to-[#070515]">
-        <GhostCursor color="#c6ff7c" trailLength={45} inertia={0.65} brightness={1.6} />
+      <section id="inicio" className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-5 pt-12 pb-20 overflow-hidden bg-gradient-to-b from-[#070515] via-[#0c0926] to-[#070515]">
+        <GhostCursor color="#c6ff7c" trailLength={36} inertia={0.68} brightness={1.6} />
 
         {/* Floating pill tags */}
         <div className="relative z-10 max-w-5xl mx-auto space-y-6">
@@ -97,6 +170,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
               <span>Prueba de Nivel Gratuita</span>
               <FaArrowRight className="text-sm" />
             </a>
+
             <button
               onClick={onNavigateToChat}
               className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/15 border border-white/20 text-white rounded-full font-bold text-base uppercase tracking-wide transition-colors flex items-center justify-center gap-3"
@@ -104,6 +178,16 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
               <FaRobot className="text-brand-blue text-lg" />
               <span>Consultar al Asistente IA</span>
             </button>
+
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-6 py-4 bg-[#229ED9]/20 hover:bg-[#229ED9]/30 border border-[#229ED9]/40 text-[#229ED9] hover:text-white rounded-full font-bold text-base uppercase tracking-wide transition-colors flex items-center justify-center gap-3"
+            >
+              <FaTelegramPlane className="text-lg" />
+              <span>Canal Telegram</span>
+            </a>
           </div>
 
           {/* Live quick proof pills */}
@@ -132,394 +216,402 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
         </div>
       </section>
 
-      {/* ================= PROGRAMAS E IDIOMAS ================= */}
-      <section id="programas" className="py-24 px-5 max-w-7xl mx-auto w-full">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <span className="text-brand-orange uppercase font-bold text-xs tracking-widest">Catálogo Académico Oficial</span>
-          <h2 className="font-display text-4xl sm:text-6xl uppercase text-white tracking-tight">
-            5 Idiomas Estructurados en el <span className="text-brand-lime">Marco Europeo (MCER)</span>
-          </h2>
-          <p className="text-slate-400 text-base">
-            Cada nivel consta de módulos de 40 horas académicas con docentes nativos o bilingües C1/C2 certificados, plataforma digital interactiva 24/7 y laboratorios de conversación.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {[
-            { name: 'Inglés', desc: 'General & Negocios. Niveles A1 hasta C1. Preparación IELTS/TOEFL.', flag: '🇬🇧 🇺🇸', color: 'from-blue-600/30 to-blue-900/10', border: 'border-blue-500/30' },
-            { name: 'Francés', desc: 'Enfoque comunicativo. Niveles A1 hasta B2. Preparación DELF/DALF.', flag: '🇫🇷', color: 'from-indigo-600/30 to-indigo-900/10', border: 'border-indigo-500/30' },
-            { name: 'Alemán', desc: 'Precisión técnica y gramatical. Niveles A1 hasta B2. Goethe-Zertifikat.', flag: '🇩🇪', color: 'from-amber-600/30 to-amber-900/10', border: 'border-amber-500/30' },
-            { name: 'Italiano', desc: 'Inmersión cultural y fluidez. Niveles A1 hasta B2. Certificación CILS.', flag: '🇮🇹', color: 'from-emerald-600/30 to-emerald-900/10', border: 'border-emerald-500/30' },
-            { name: 'Portugués', desc: 'Portugués Brasileño práctico y corporativo. Niveles A1 hasta B2.', flag: '🇧🇷', color: 'from-teal-600/30 to-teal-900/10', border: 'border-teal-500/30' },
-          ].map((lang, idx) => (
-            <div key={idx} className={`p-6 rounded-3xl bg-gradient-to-b ${lang.color} border ${lang.border} flex flex-col justify-between hover:scale-105 transition-transform shadow-lg`}>
-              <div>
-                <div className="text-3xl mb-3">{lang.flag}</div>
-                <h3 className="font-display text-2xl text-white uppercase mb-2">{lang.name}</h3>
-                <p className="text-slate-300 text-xs leading-relaxed">{lang.desc}</p>
-              </div>
-              <div className="pt-6 border-t border-white/10 mt-4 flex items-center justify-between text-xs text-brand-lime font-semibold">
-                <span>Módulos de 40h</span>
-                <span>MCER A1-C1</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ================= MODALIDADES & SEDES ================= */}
-      <section id="modalidades" className="py-24 bg-white/5 border-y border-white/10">
-        <div className="max-w-7xl mx-auto px-5">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
-            <div className="space-y-6">
-              <span className="text-brand-lime uppercase font-bold text-xs tracking-widest">Flexibilidad Total</span>
-              <h2 className="font-display text-4xl sm:text-5xl uppercase text-white tracking-tight leading-tight">
-                Elige cómo y dónde estudiar
-              </h2>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                Nuestras instalaciones cuentan con aulas inteligentes, climatizadas, pantallas interactivas táctiles y zonas de inmersión conversacional (Language Coffee Lounges).
-              </p>
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-3 text-sm text-slate-200">
-                  <FaCheckCircle className="text-brand-lime flex-shrink-0" />
-                  <span>Sede Bogotá Chapinero: Cra. 7 # 54 - 20 (Estación Calle 57)</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-slate-200">
-                  <FaCheckCircle className="text-brand-lime flex-shrink-0" />
-                  <span>Sede Bogotá Calle 100: Cl. 100 # 15 - 30 (Chicó Norte)</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-slate-200">
-                  <FaCheckCircle className="text-brand-lime flex-shrink-0" />
-                  <span>Sede Medellín El Poblado: Cra. 43A # 5A - 113 (Parque del Poblado)</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 space-y-4 hover:border-brand-lime transition-colors">
-                <div className="w-12 h-12 rounded-2xl bg-brand-lime text-brand-dark flex items-center justify-center text-xl">
-                  <FaLaptopHouse />
-                </div>
-                <h3 className="font-display text-2xl uppercase text-white">100% Virtual en Vivo</h3>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  Clases sincrónicas en tiempo real por Zoom HD y Meet, grabaciones completas en plataforma LMS disponible 24/7 y grupos reducidos de máximo 10 a 12 alumnos.
-                </p>
-                <div className="flex gap-2 text-xs font-mono text-brand-blue pt-2">
-                  <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10">Zoom HD</span>
-                  <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10">LMS 24/7</span>
-                  <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10">Max 12 Alumnos</span>
-                </div>
-              </div>
-
-              <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 space-y-4 hover:border-brand-orange transition-colors">
-                <div className="w-12 h-12 rounded-2xl bg-brand-orange text-white flex items-center justify-center text-xl">
-                  <FaSchool />
-                </div>
-                <h3 className="font-display text-2xl uppercase text-white">Presencial en Sede</h3>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  Aulas inteligentes climatizadas, zonas de café de inmersión conversacional y acceso directo a laboratorios presenciales en Bogotá y Medellín.
-                </p>
-                <div className="flex gap-2 text-xs font-mono text-brand-orange pt-2">
-                  <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10">Bogotá</span>
-                  <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10">Medellín</span>
-                  <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10">Language Lounge</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= HORARIOS OFICIALES ================= */}
-      <section id="horarios" className="py-24 px-5 max-w-7xl mx-auto w-full">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <span className="text-brand-blue uppercase font-bold text-xs tracking-widest">Franjas Sincrónicas COT (GMT-5)</span>
-          <h2 className="font-display text-4xl sm:text-6xl uppercase text-white tracking-tight">
-            Horarios Adaptados a tu Rutina
-          </h2>
-          <p className="text-slate-400 text-base">
-            Todos los horarios programados en hora oficial de Colombia para estudiantes nacionales e internacionales.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3">
-            <span className="text-xs font-mono text-brand-yellow font-bold uppercase">Madrugador</span>
-            <h3 className="font-display text-2xl text-white">06:00 – 08:00 COT</h3>
-            <p className="text-slate-300 text-xs">Lunes a Viernes (2h diarias / 40h mes). Ideal para profesionales antes de la jornada laboral.</p>
-          </div>
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3">
-            <span className="text-xs font-mono text-brand-lime font-bold uppercase">Mañana & Tarde</span>
-            <h3 className="font-display text-2xl text-white">09:00–11:00 / 14:00–16:00</h3>
-            <p className="text-slate-300 text-xs">Lunes a Viernes. Franjas regulares presenciales y virtuales con clubes conversacionales.</p>
-          </div>
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3">
-            <span className="text-xs font-mono text-brand-purple font-bold uppercase">Noche Prime</span>
-            <h3 className="font-display text-2xl text-white">18:30 – 20:30 COT</h3>
-            <p className="text-slate-300 text-xs">Lunes a Viernes (opción 20:30–22:30 virtual). Máxima concentración después del trabajo.</p>
-          </div>
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3">
-            <span className="text-xs font-mono text-brand-orange font-bold uppercase">Sabatino Concentrado</span>
-            <h3 className="font-display text-2xl text-white">08:00 – 13:00 COT</h3>
-            <p className="text-slate-300 text-xs">Sábados intensivos (5h continuas con receso de 25 min). Presencial en sede y virtual.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= PRECIOS Y TARIFAS COP ================= */}
-      <section id="precios" className="py-24 bg-gradient-to-b from-[#070515] via-[#100c2a] to-[#070515] border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-5">
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <span className="text-brand-lime uppercase font-bold text-xs tracking-widest">Tarifas Transparentes 2026</span>
-            <h2 className="font-display text-4xl sm:text-6xl uppercase text-white tracking-tight">
-              Planes de Inversión en <span className="text-brand-lime">Pesos Colombianos (COP)</span>
+      {/* ================= SECTION 1: IDIOMAS Y PENSUM MCER ================= */}
+      <section id="programas" className="py-24 px-5 border-t border-white/10 bg-[#070515]">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-mono uppercase tracking-widest text-brand-lime bg-brand-lime/10 px-3.5 py-1 rounded-full border border-brand-lime/20">
+              Oferta Curricular
+            </span>
+            <h2 className="font-display text-4xl sm:text-6xl uppercase text-white">
+              5 Idiomas Globales • Marco Común Europeo (MCER)
             </h2>
-            <p className="text-slate-300 text-sm">
-              Sin cobros ocultos. Facturación electrónica DIAN. Aceptamos PSE, Bancolombia, Nequi y Tarjetas.
+            <p className="text-slate-400 text-sm sm:text-base">
+              Todos nuestros cursos siguen los estándares internacionales de dominio lingüístico: desde el nivel introductorio A1 hasta el nivel avanzado operacional C1.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-            {/* Plan 1 */}
-            <div className="p-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col justify-between space-y-6 hover:border-white/30 transition-all">
-              <div>
-                <span className="text-xs text-slate-400 font-mono uppercase">Lunes a Viernes</span>
-                <h3 className="font-display text-3xl uppercase text-white mt-1">Módulo Intensivo</h3>
-                <p className="text-slate-300 text-xs mt-2">40 horas académicas al mes. Incluye clubes de conversación.</p>
-                <div className="text-4xl font-display text-brand-orange my-6">$650.000 <span className="text-sm font-sans text-slate-400">COP/mes</span></div>
-                <ul className="space-y-2.5 text-xs text-slate-300">
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Clases en vivo + grabaciones</li>
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Licencia digital de plataforma</li>
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Certificado de asistencia</li>
-                </ul>
-              </div>
-              <a href="#placement-test" className="w-full py-3.5 text-center rounded-full border border-white/20 hover:bg-white text-white hover:text-brand-dark font-bold text-sm uppercase tracking-wider transition-colors">
-                Inscribirme
-              </a>
-            </div>
-
-            {/* Plan 2: Destacado */}
-            <div className="p-8 rounded-3xl bg-gradient-to-b from-[#1c1448] to-[#100c2a] border-2 border-brand-lime flex flex-col justify-between space-y-6 shadow-2xl shadow-brand-lime/10 relative scale-105">
-              <div className="absolute -top-3.5 right-6 bg-brand-lime text-brand-dark text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider">
-                Más Elegido
-              </div>
-              <div>
-                <span className="text-xs text-brand-lime font-mono uppercase">Fin de Semana</span>
-                <h3 className="font-display text-3xl uppercase text-white mt-1">Módulo Sabatino</h3>
-                <p className="text-slate-300 text-xs mt-2">Sábados 8:00 AM – 1:00 PM. 20 horas académicas al mes.</p>
-                <div className="text-4xl font-display text-brand-lime my-6">$520.000 <span className="text-sm font-sans text-slate-400">COP/mes</span></div>
-                <ul className="space-y-2.5 text-xs text-slate-200">
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> 10% dcto adicional por pronto pago ($468.000 COP)</li>
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Acceso a LMS 24/7 y laboratorios</li>
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Disponible en Sedes y Virtual</li>
-                </ul>
-              </div>
-              <a href="#placement-test" className="w-full py-3.5 text-center rounded-full bg-brand-lime hover:bg-[#b5f85e] text-brand-dark font-bold text-sm uppercase tracking-wider transition-colors shadow-lg shadow-brand-lime/20">
-                Inscribirme
-              </a>
-            </div>
-
-            {/* Plan 3 */}
-            <div className="p-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col justify-between space-y-6 hover:border-white/30 transition-all">
-              <div>
-                <span className="text-xs text-slate-400 font-mono uppercase">Personalizado</span>
-                <h3 className="font-display text-3xl uppercase text-white mt-1">Tutoría VIP 1-a-1</h3>
-                <p className="text-slate-300 text-xs mt-2">Clases particulares adaptadas a tus metas profesionales.</p>
-                <div className="text-4xl font-display text-brand-blue my-6">$75.000 <span className="text-sm font-sans text-slate-400">COP/hora</span></div>
-                <ul className="space-y-2.5 text-xs text-slate-300">
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Paquetes desde 10h ($700.000 COP)</li>
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Reprogramación con 24h de aviso</li>
-                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Preparación de entrevistas y viajes</li>
-                </ul>
-              </div>
-              <a href="#placement-test" className="w-full py-3.5 text-center rounded-full border border-white/20 hover:bg-white text-white hover:text-brand-dark font-bold text-sm uppercase tracking-wider transition-colors">
-                Cotizar Paquete
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= PLACEMENT TEST & CONTACT FORM ================= */}
-      <section id="placement-test" className="py-24 px-5 max-w-7xl mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <span className="text-brand-orange uppercase font-bold text-xs tracking-widest">Sin Costo</span>
-            <h2 className="font-display text-4xl sm:text-6xl uppercase text-white tracking-tight leading-none">
-              Presenta tu <span className="text-brand-orange">Placement Test</span> en 25 Minutos
-            </h2>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              Diagnostica tu nivel en el Marco Común Europeo (A1 a C1). Si eres principiante absoluto (A1), comienzas directamente sin presentar la prueba.
-            </p>
-            <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-2">
-              <div className="flex items-center gap-2 text-brand-lime font-semibold text-sm">
-                <FaCheckCircle />
-                <span>Requisitos de Matrícula Básicos:</span>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Cédula de Ciudadanía, Tarjeta de Identidad (jóvenes 10-17 años) o Pasaporte/Cédula de Extranjería. Edad mínima: 14 años (programa adultos) o 10 años (programa Teens).
-              </p>
-            </div>
-          </div>
-
-          <div className="p-8 sm:p-10 rounded-3xl bg-[#100c2a] border border-white/10 shadow-2xl">
-            {formSubmitted ? (
-              <div className="text-center py-12 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-brand-lime text-brand-dark flex items-center justify-center text-3xl mx-auto">
-                  <FaCheckCircle />
-                </div>
-                <h3 className="font-display text-3xl uppercase text-white">¡Solicitud Recibida!</h3>
-                <p className="text-slate-300 text-sm max-w-md mx-auto">
-                  Te hemos enviado las instrucciones y el enlace para tu prueba de clasificación a tu correo electrónico.
-                </p>
-                <button
-                  onClick={() => setFormSubmitted(false)}
-                  className="mt-4 px-6 py-2 rounded-full border border-white/20 text-xs text-white hover:bg-white/10"
-                >
-                  Enviar otra solicitud
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <h3 className="font-display text-2xl uppercase text-white mb-2">Solicitar Admisión & Test</h3>
-                
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {[
+              { code: 'EN', name: 'Inglés', desc: 'A1, A2, B1, B2, C1 con enfoque conversacional y preparación IELTS/TOEFL.', flag: '🇺🇸 / 🇬🇧', color: 'border-brand-lime/40' },
+              { code: 'FR', name: 'Francés', desc: 'Preparación para certificaciones DELF/DALF. Enfoque profesional y cultural.', flag: '🇫🇷', color: 'border-brand-blue/40' },
+              { code: 'DE', name: 'Alemán', desc: 'Desde A1 hasta B2 con preparación para exámenes oficiales Goethe-Zertifikat.', flag: '🇩🇪', color: 'border-brand-yellow/40' },
+              { code: 'IT', name: 'Italiano', desc: 'Inmersión comunicativa y gramatical para negocios, turismo y ciudadanía CELI.', flag: '🇮🇹', color: 'border-brand-orange/40' },
+              { code: 'PT', name: 'Portugués', desc: 'Portugués de Brasil y Portugal, preparación para examen internacional Celpe-Bras.', flag: '🇧🇷', color: 'border-brand-purple/40' },
+            ].map((lang) => (
+              <div 
+                key={lang.code}
+                className={`p-6 rounded-3xl bg-[#100c2a] border ${lang.color} hover:border-brand-lime transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1`}
+              >
                 <div>
-                  <label className="text-xs uppercase font-bold text-slate-400 block mb-1">Nombre Completo</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej. Camila Morales"
-                    className="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-sm"
-                  />
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-2xl">{lang.flag}</span>
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white/10 text-white">{lang.code}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{lang.name}</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">{lang.desc}</p>
                 </div>
+                <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+                  <span>Niveles A1 - C1</span>
+                  <button onClick={onNavigateToChat} className="text-brand-lime font-bold hover:underline">Consultar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* ================= SECTION 2: SEDES Y MODALIDADES ================= */}
+      <section id="modalidades" className="py-24 px-5 border-t border-white/10 bg-[#0a0720]">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-mono uppercase tracking-widest text-brand-blue bg-brand-blue/10 px-3.5 py-1 rounded-full border border-brand-blue/20">
+              Flexibilidad Total
+            </span>
+            <h2 className="font-display text-4xl sm:text-6xl uppercase text-white">
+              Sedes Físicas & Modalidad Virtual en Vivo
+            </h2>
+            <p className="text-slate-400 text-sm sm:text-base">
+              Estudia en nuestras modernas sedes en Bogotá y Medellín o conéctate desde cualquier lugar de Colombia con clases 100% en tiempo real.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 hover:border-brand-lime/50 transition-all space-y-5">
+              <div className="w-12 h-12 rounded-2xl bg-brand-lime/10 text-brand-lime flex items-center justify-center text-xl">
+                <FaSchool />
+              </div>
+              <h3 className="text-2xl font-bold text-white">Presencial en Sede</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Aulas climatizadas, laboratorios multimedia y clubes de conversación presenciales.
+              </p>
+              <div className="space-y-2 text-xs text-slate-400 pt-2 border-t border-white/10">
+                <div className="flex items-center gap-2"><FaMapMarkerAlt className="text-brand-lime" /> <strong>Bogotá:</strong> Sede Chapinero & Sede Calle 100</div>
+                <div className="flex items-center gap-2"><FaMapMarkerAlt className="text-brand-lime" /> <strong>Medellín:</strong> Sede El Poblado & Sede Laureles</div>
+              </div>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 hover:border-brand-blue/50 transition-all space-y-5">
+              <div className="w-12 h-12 rounded-2xl bg-brand-blue/10 text-brand-blue flex items-center justify-center text-xl">
+                <FaLaptopHouse />
+              </div>
+              <h3 className="text-2xl font-bold text-white">100% Virtual en Vivo</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Clases interactivas en vivo con profesores en directo a través de Zoom & Google Meet. Acceso a plataforma 24/7.
+              </p>
+              <div className="flex items-center gap-4 text-xs text-slate-400 pt-2 border-t border-white/10">
+                <span className="flex items-center gap-1.5"><SiZoom className="text-brand-blue" /> Zoom Pro</span>
+                <span className="flex items-center gap-1.5"><SiGooglemeet className="text-brand-lime" /> Google Meet</span>
+                <span className="flex items-center gap-1.5"><FaClock className="text-brand-yellow" /> Grabaciones 30 días</span>
+              </div>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 hover:border-brand-yellow/50 transition-all space-y-5">
+              <div className="w-12 h-12 rounded-2xl bg-brand-yellow/10 text-brand-yellow flex items-center justify-center text-xl">
+                <FaGlobeAmericas />
+              </div>
+              <h3 className="text-2xl font-bold text-white">Modalidad Híbrida / Blended</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Alterna entre asistencia a sede física y sesiones virtuales según tu agenda laboral y académica semanal.
+              </p>
+              <div className="space-y-1.5 text-xs text-slate-400 pt-2 border-t border-white/10">
+                <p>• Flexibilidad para ejecutivos y universitarios</p>
+                <p>• Mismo avance curricular y certificación oficial</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= SECTION 3: HORARIOS Y TURNOS ================= */}
+      <section id="horarios" className="py-24 px-5 border-t border-white/10 bg-[#070515]">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-mono uppercase tracking-widest text-brand-yellow bg-brand-yellow/10 px-3.5 py-1 rounded-full border border-brand-yellow/20">
+              Disponibilidad Horaria
+            </span>
+            <h2 className="font-display text-4xl sm:text-6xl uppercase text-white">
+              Turnos Intensivos y Sabatinos
+            </h2>
+            <p className="text-slate-400 text-sm sm:text-base">
+              Ajusta tu aprendizaje a tu estilo de vida con horarios matutinos, nocturnos o fines de semana.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FaClock className="text-2xl text-brand-lime" />
+                  <h3 className="text-2xl font-bold text-white">Intensivo Lunes a Viernes</h3>
+                </div>
+                <span className="text-xs font-mono px-3 py-1 bg-brand-lime/10 text-brand-lime rounded-full border border-brand-lime/30">
+                  40 horas / mes
+                </span>
+              </div>
+              <p className="text-sm text-slate-300">2 horas diarias de clase interactiva:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-slate-400 block">Mañana:</span>
+                  <strong className="text-white">6:00 AM - 8:00 AM</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-slate-400 block">Intermedio:</span>
+                  <strong className="text-white">8:30 AM - 10:30 AM</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-slate-400 block">Noche:</span>
+                  <strong className="text-white">6:30 PM - 8:30 PM</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FaCalendarAlt className="text-2xl text-brand-blue" />
+                  <h3 className="text-2xl font-bold text-white">Sabatino Concentrado</h3>
+                </div>
+                <span className="text-xs font-mono px-3 py-1 bg-brand-blue/10 text-brand-blue rounded-full border border-brand-blue/30">
+                  20 horas / mes
+                </span>
+              </div>
+              <p className="text-sm text-slate-300">Sesión única de fin de semana:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-slate-400 block">Sábados Mañana:</span>
+                  <strong className="text-white">8:00 AM - 1:00 PM</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-slate-400 block">Sábados Tarde:</span>
+                  <strong className="text-white">1:30 PM - 6:30 PM</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= SECTION 4: PRECIOS Y MEDIOS DE PAGO EN COP ================= */}
+      <section id="precios" className="py-24 px-5 border-t border-white/10 bg-[#0a0720]">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="text-xs font-mono uppercase tracking-widest text-brand-lime bg-brand-lime/10 px-3.5 py-1 rounded-full border border-brand-lime/20">
+              Tarifas Transparentes en COP
+            </span>
+            <h2 className="font-display text-4xl sm:text-6xl uppercase text-white">
+              Inversión Mensual & Descuentos
+            </h2>
+            <p className="text-slate-400 text-sm sm:text-base">
+              Precios oficiales sin costos ocultos. Todos los programas incluyen acceso a la plataforma digital y material de estudio.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 hover:border-brand-lime transition-all space-y-6 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-mono uppercase text-slate-400">Programa Sabatino</span>
+                <h3 className="text-2xl font-bold text-white mt-1">Sabatino Standard</h3>
+                <div className="my-6">
+                  <span className="text-4xl font-display text-white">$520.000</span>
+                  <span className="text-slate-400 text-xs ml-2">COP / módulo</span>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-300">
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> 20 horas académicas al mes</li>
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Plataforma interactiva 24/7</li>
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Clubes de conversación virtuales</li>
+                </ul>
+              </div>
+              <button onClick={onNavigateToChat} className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider transition-colors">
+                Consultar con Asistente
+              </button>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-[#130f35] border-2 border-brand-lime shadow-xl shadow-brand-lime/10 space-y-6 flex flex-col justify-between relative">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-brand-lime text-brand-dark rounded-full text-[11px] font-bold uppercase tracking-widest">
+                Más Popular
+              </div>
+              <div>
+                <span className="text-xs font-mono uppercase text-brand-lime">Programa Intensivo</span>
+                <h3 className="text-2xl font-bold text-white mt-1">Intensivo L-V</h3>
+                <div className="my-6">
+                  <span className="text-4xl font-display text-white">$650.000</span>
+                  <span className="text-slate-400 text-xs ml-2">COP / módulo</span>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-300">
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> 40 horas al mes (2h diarias)</li>
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> 10% de descuento por pronto pago ($585.000 COP)</li>
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Simulacros de exámenes internacionales</li>
+                </ul>
+              </div>
+              <button onClick={onNavigateToChat} className="w-full py-3 rounded-xl bg-brand-lime hover:bg-[#b0f55c] text-brand-dark font-bold text-xs uppercase tracking-wider transition-transform hover:scale-105">
+                Iniciar Asesoría IA
+              </button>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 hover:border-brand-purple transition-all space-y-6 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-mono uppercase text-slate-400">Exámenes Internacionales</span>
+                <h3 className="text-2xl font-bold text-white mt-1">Prep IELTS / TOEFL</h3>
+                <div className="my-6">
+                  <span className="text-4xl font-display text-white">$780.000</span>
+                  <span className="text-slate-400 text-xs ml-2">COP / módulo</span>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-300">
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> 40 horas especializadas en técnicas de examen</li>
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Simulacros oficiales con retroalimentación</li>
+                  <li className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Material de preparación Cambridge/ETS</li>
+                </ul>
+              </div>
+              <button onClick={onNavigateToChat} className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider transition-colors">
+                Consultar con Asistente
+              </button>
+            </div>
+          </div>
+
+          {/* Payment methods pill banner */}
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-3">
+              <FaCreditCard className="text-xl text-brand-lime" />
+              <span><strong>Medios de Pago Habilitados:</strong> PSE, Transferencia Bancolombia, Nequi, Tarjetas Débito/Crédito y Financiación Directa sin Intereses.</span>
+            </div>
+            <span className="text-slate-400 font-mono">Matrícula anual: $120.000 COP</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= SECTION 5: PLACEMENT TEST / INSCRIPCIÓN ================= */}
+      <section id="placement-test" className="py-24 px-5 border-t border-white/10 bg-[#070515]">
+        <div className="max-w-5xl mx-auto rounded-3xl bg-gradient-to-r from-[#120d36] to-[#18114a] border border-brand-lime/30 p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative z-10">
+            <div className="space-y-5">
+              <span className="text-xs font-mono uppercase tracking-widest text-brand-lime bg-brand-lime/10 px-3 py-1 rounded-full border border-brand-lime/30">
+                100% Gratuita • 25 Minutos
+              </span>
+              <h2 className="font-display text-4xl sm:text-5xl uppercase text-white">
+                Prueba de Clasificación de Nivel
+              </h2>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Descubre tu nivel exacto según el marco MCER (A1 a C1). Evaluación gramatical, de comprensión auditiva y entrevista diagnóstica.
+              </p>
+              <div className="space-y-2 text-xs text-slate-300">
+                <div className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Sin costo de presentación</div>
+                <div className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Resultados inmediatos y recomendación de curso</div>
+                <div className="flex items-center gap-2"><FaCheckCircle className="text-brand-lime" /> Asesoría directa con nuestro Asistente Inteligente</div>
+              </div>
+            </div>
+
+            <div className="bg-[#0c0926]/90 p-6 rounded-2xl border border-white/10">
+              {formSubmitted ? (
+                <div className="text-center py-8 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-brand-lime/20 text-brand-lime flex items-center justify-center mx-auto text-xl">
+                    <FaCheckCircle />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">¡Solicitud Recibida!</h3>
+                  <p className="text-xs text-slate-300">
+                    Te enviaremos el enlace para tu prueba de clasificación a tu correo electrónico. Puedes consultar detalles con nuestro Asistente IA.
+                  </p>
+                  <button onClick={onNavigateToChat} className="mt-4 px-6 py-2.5 rounded-full bg-brand-lime text-brand-dark font-bold text-xs uppercase">
+                    Abrir Asistente IA
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-3.5">
+                  <h3 className="text-base font-bold text-white mb-2">Solicita tu Prueba Online</h3>
                   <div>
-                    <label className="text-xs uppercase font-bold text-slate-400 block mb-1">WhatsApp / Teléfono</label>
+                    <label className="text-[11px] text-slate-400 block mb-1">Nombre Completo</label>
                     <input
-                      type="tel"
+                      type="text"
                       required
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="Ej. 310 123 4567"
-                      className="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-sm"
+                      placeholder="Ej. Laura Gómez"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-lime"
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-slate-400 block mb-1">Teléfono / WhatsApp</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="Ej. 310 123 4567"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-lime"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-400 block mb-1">Idioma de Interés</label>
+                      <select
+                        value={formData.language}
+                        onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                        className="w-full px-3.5 py-2 rounded-xl bg-[#141038] border border-white/10 text-xs text-white focus:outline-none focus:border-brand-lime"
+                      >
+                        <option>Inglés</option>
+                        <option>Francés</option>
+                        <option>Alemán</option>
+                        <option>Italiano</option>
+                        <option>Portugués</option>
+                      </select>
+                    </div>
+                  </div>
                   <div>
-                    <label className="text-xs uppercase font-bold text-slate-400 block mb-1">Correo Electrónico</label>
+                    <label className="text-[11px] text-slate-400 block mb-1">Correo Electrónico</label>
                     <input
                       type="email"
                       required
+                      placeholder="Ej. laura@correo.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="camila@correo.com"
-                      className="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-sm"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-lime"
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs uppercase font-bold text-slate-400 block mb-1">Idioma</label>
-                    <select
-                      value={formData.language}
-                      onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#18133d] rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-sm"
-                    >
-                      <option value="Inglés">Inglés</option>
-                      <option value="Francés">Francés</option>
-                      <option value="Alemán">Alemán</option>
-                      <option value="Italiano">Italiano</option>
-                      <option value="Portugués">Portugués</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs uppercase font-bold text-slate-400 block mb-1">Modalidad de Interés</label>
-                    <select
-                      value={formData.modality}
-                      onChange={(e) => setFormData({ ...formData, modality: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#18133d] rounded-xl border border-white/10 focus:border-brand-lime focus:outline-none text-white text-sm"
-                    >
-                      <option value="100% Virtual en Vivo">100% Virtual en Vivo</option>
-                      <option value="Presencial Bogotá (Chapinero)">Presencial Bogotá (Chapinero)</option>
-                      <option value="Presencial Bogotá (Calle 100)">Presencial Bogotá (Calle 100)</option>
-                      <option value="Presencial Medellín (El Poblado)">Presencial Medellín (El Poblado)</option>
-                      <option value="Híbrido">Híbrido</option>
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-4 bg-brand-lime hover:bg-[#b5f85e] text-brand-dark font-bold uppercase tracking-wider rounded-xl transition-transform hover:scale-[1.02] shadow-lg shadow-brand-lime/20 text-sm mt-4"
-                >
-                  Agendar Mi Test Gratuito
-                </button>
-              </form>
-            )}
+                  <button
+                    type="submit"
+                    className="w-full py-3 rounded-xl bg-brand-lime hover:bg-[#b0f55c] text-brand-dark font-bold text-xs uppercase tracking-wide transition-all shadow-md mt-2"
+                  >
+                    Agendar Prueba Gratuita
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ================= FOOTER ================= */}
-      <footer className="bg-[#050310] border-t border-white/10 pt-16 pb-8 text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto px-5 grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold">
-                <FaGraduationCap />
-              </div>
-              <span className="font-display text-xl uppercase text-white tracking-wider">Vanguard</span>
+      <footer className="py-12 px-5 border-t border-white/10 bg-[#050310] text-xs text-slate-400">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold">
+              <FaGraduationCap className="text-base" />
             </div>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              Academia de Idiomas Colombiana. Registro de Educación para el Trabajo y Desarrollo Humano.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white uppercase text-xs tracking-wider mb-3">Sedes Físicas</h4>
-            <p className="space-y-1 leading-relaxed text-slate-400">
-              <strong className="text-slate-300">Bogotá Chapinero:</strong> Cra. 7 # 54-20<br/>
-              <strong className="text-slate-300">Bogotá Calle 100:</strong> Cl. 100 # 15-30<br/>
-              <strong className="text-slate-300">Medellín:</strong> Cra. 43A # 5A-113 (El Poblado)
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white uppercase text-xs tracking-wider mb-3">Medios de Pago</h4>
-            <p className="leading-relaxed text-slate-400">
-              PSE, Bancolombia, Nequi, Daviplata, Tarjetas de Crédito y Débito. Factura Electrónica DIAN.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-white uppercase text-xs tracking-wider mb-3">Canales de Soporte</h4>
-            <div className="space-y-2">
-              <p className="flex items-center gap-2 text-slate-300">
-                <FaTelegramPlane className="text-brand-blue" />
-                <span>@CL_Academy_bot (Telegram)</span>
-              </p>
-              <button
-                onClick={onNavigateToChat}
-                className="text-brand-lime hover:underline font-semibold block text-left"
-              >
-                Abrir Vanguard Assistant 24/7 →
-              </button>
+            <div>
+              <strong className="text-white block font-display uppercase tracking-wider">Vanguard Language Academy</strong>
+              <span className="text-[10px] text-slate-500">Acreditación Oficial • Colombia 2026</span>
             </div>
           </div>
-        </div>
 
-        <div className="max-w-7xl mx-auto px-5 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
-          <p>© 2026 Vanguard Language Academy Colombia. Todos los derechos reservados.</p>
-          <div className="flex gap-4">
-            <button onClick={onNavigateToAdmin} className="hover:text-white transition-colors">Administración</button>
-            <a href="#placement-test" className="hover:text-white transition-colors">Admisiones</a>
+          <div className="flex items-center gap-6">
+            <a href="#programas" className="hover:text-white transition-colors">Programas</a>
+            <a href="#precios" className="hover:text-white transition-colors">Tarifas COP</a>
+            <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer" className="hover:text-[#229ED9] transition-colors flex items-center gap-1">
+              <FaTelegramPlane /> Telegram Bot
+            </a>
+            <button onClick={onNavigateToChat} className="hover:text-brand-lime transition-colors flex items-center gap-1">
+              <FaRobot /> Asistente IA
+            </button>
+            <button onClick={onNavigateToAdmin} className="hover:text-white transition-colors">
+              Portal Staff
+            </button>
           </div>
+
+          <p className="text-[11px] text-slate-500">
+            © 2026 Academia de Idiomas Colombiana. Todos los derechos reservados.
+          </p>
         </div>
       </footer>
-
     </div>
   );
 }

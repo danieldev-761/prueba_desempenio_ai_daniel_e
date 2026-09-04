@@ -3,9 +3,14 @@ import {
   FaGraduationCap, FaPlus, FaHistory, FaSearch, FaPaperPlane, 
   FaBookOpen, FaCheckCircle, FaClock, FaMapMarkerAlt, 
   FaMoneyBillWave, FaCertificate, FaArrowLeft, FaTrash, 
-  FaChevronLeft, FaChevronRight, FaRegCopy, FaCheck, FaRobot
+  FaChevronLeft, FaChevronRight, FaRegCopy, FaCheck, FaRobot,
+  FaTelegramPlane, FaUserCheck, FaExclamationTriangle
 } from 'react-icons/fa';
-import { sendChatMessage, getVisitorConversations, getVisitorConversationTranscript } from '../services/api';
+import { sendChatMessage } from '../services/api';
+import EscalationModal from './EscalationModal';
+import LiveAdvisorChat from './LiveAdvisorChat';
+
+const TELEGRAM_BOT_URL = 'https://t.me/CL_Academy_bot';
 
 const QUICK_SUGGESTIONS = [
   "¿Cuánto cuesta el intensivo de inglés y qué horarios tienen en Bogotá?",
@@ -16,69 +21,83 @@ const QUICK_SUGGESTIONS = [
   "¿Cuáles son los horarios de sábados y tarifas de la Sede Medellín?",
 ];
 
+const DEFAULT_WELCOME_MSG = {
+  id: 'welcome_init',
+  sender: 'assistant',
+  content: '¡Hola! Bienvenido a **Vanguard Assistant**, tu asesor académico inteligente oficial. Estoy capacitado con los reglamentos, planes de estudio, horarios y tarifas de la **Academia de Idiomas Colombiana**.\n\n¿En qué idioma o programa estás interesado el día de hoy?',
+  sources: [
+    { document: 'cursos_y_modalidades.md', section: 'Oferta Académica' },
+    { document: 'precios_y_metodos_de_pago.md', section: 'Tarifas 2026' }
+  ],
+  confidence_score: 1.0,
+  latency_ms: 120,
+  created_at: new Date().toISOString(),
+};
+
 export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdmin }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inputQuery, setInputQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  
-  // Current active session and messages
+
+  // Escalation & Live Chat Modal State
+  const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false);
+  const [escalationContext, setEscalationContext] = useState('');
+  const [liveChatSession, setLiveChatSession] = useState(null);
+
+  // Active Session & Local Threads
   const [sessionId, setSessionId] = useState(() => {
-    return localStorage.getItem('vanguard_active_session_id') || `session_${Date.now()}`;
-  });
-  
-  const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem(`vanguard_chat_${sessionId}`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (_) {}
-    }
-    return [
-      {
-        id: 'welcome-1',
-        sender: 'assistant',
-        content: '¡Hola! Bienvenido a **Vanguard Assistant**, tu asesor académico inteligente oficial. Estoy capacitado con los reglamentos, planes de estudio, horarios y tarifas de la **Academia de Idiomas Colombiana**.\n\n¿En qué idioma o programa estás interesado el día de hoy?',
-        sources: [
-          { document: 'cursos_y_modalidades.md', section: 'Oferta Académica' },
-          { document: 'precios_y_metodos_de_pago.md', section: 'Tarifas 2026' }
-        ],
-        confidence_score: 1.0,
-        latency_ms: 120,
-        created_at: new Date().toISOString(),
-      }
-    ];
+    return localStorage.getItem('vanguard_active_session_id') || `sess_${Date.now()}`;
   });
 
-  const [historySessions, setHistorySessions] = useState([]);
+  const [savedSessions, setSavedSessions] = useState(() => {
+    try {
+      const stored = localStorage.getItem('vanguard_sessions_index');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [messages, setMessages] = useState(() => {
+    const local = localStorage.getItem(`vanguard_chat_${sessionId}`);
+    if (local) {
+      try { return JSON.parse(local); } catch (_) {}
+    }
+    return [DEFAULT_WELCOME_MSG];
+  });
+
   const messagesEndRef = useRef(null);
 
-  // Load visitor conversations from server or local
-  useEffect(() => {
-    async function loadSessions() {
-      try {
-        const data = await getVisitorConversations(20, 0);
-        if (Array.isArray(data) && data.length > 0) {
-          setHistorySessions(data);
-        }
-      } catch (err) {
-        console.warn('Could not load remote history, relying on local state');
-      }
-    }
-    loadSessions();
-  }, [messages.length]);
-
-  // Save active session & messages in localStorage
+  // Sync messages & sessions index
   useEffect(() => {
     localStorage.setItem('vanguard_active_session_id', sessionId);
     localStorage.setItem(`vanguard_chat_${sessionId}`, JSON.stringify(messages));
+
+    // Update sessions index
+    setSavedSessions((prev) => {
+      const firstUserMsg = messages.find((m) => m.sender === 'user');
+      const title = firstUserMsg ? firstUserMsg.content.slice(0, 36) + '...' : 'Nueva Consulta';
+      const exists = prev.find((s) => s.id === sessionId);
+      let updated;
+      if (exists) {
+        updated = prev.map((s) => (s.id === sessionId ? { ...s, title, updatedAt: Date.now() } : s));
+      } else {
+        updated = [{ id: sessionId, title, updatedAt: Date.now() }, ...prev];
+      }
+      localStorage.setItem('vanguard_sessions_index', JSON.stringify(updated));
+      return updated;
+    });
   }, [sessionId, messages]);
 
-  // Scroll to bottom on new message
+  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // Handle New Query Thread
   const handleNewSearch = () => {
-    const newId = `session_${Date.now()}`;
+    const newId = `sess_${Date.now()}`;
     setSessionId(newId);
     setMessages([
       {
@@ -93,21 +112,48 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
     ]);
   };
 
-  const handleSelectSession = async (sess) => {
-    setSessionId(sess.id);
-    try {
-      const remoteMsgs = await getVisitorConversationTranscript(sess.id);
-      if (Array.isArray(remoteMsgs) && remoteMsgs.length > 0) {
-        setMessages(remoteMsgs);
-        return;
-      }
-    } catch (_) {}
-    const local = localStorage.getItem(`vanguard_chat_${sess.id}`);
+  // Switch to existing session
+  const handleSelectSession = (sessId) => {
+    setSessionId(sessId);
+    const local = localStorage.getItem(`vanguard_chat_${sessId}`);
     if (local) {
-      try { setMessages(JSON.parse(local)); } catch (_) {}
+      try {
+        setMessages(JSON.parse(local));
+      } catch (_) {
+        setMessages([DEFAULT_WELCOME_MSG]);
+      }
     }
   };
 
+  // Clear all local conversations
+  const handleClearAllHistory = () => {
+    savedSessions.forEach((s) => localStorage.removeItem(`vanguard_chat_${s.id}`));
+    localStorage.removeItem('vanguard_sessions_index');
+    localStorage.removeItem(`vanguard_chat_${sessionId}`);
+    setSavedSessions([]);
+    const freshId = `sess_${Date.now()}`;
+    setSessionId(freshId);
+    setMessages([DEFAULT_WELCOME_MSG]);
+  };
+
+  // Sanitize text before rendering to user
+  const cleanDisplayContent = (text) => {
+    if (!text) return '';
+    let cleaned = String(text)
+      .replace(/\[\[ESCALATE\]\]/g, '')
+      .replace(/\[NO_INFO\]/g, '')
+      .replace(/Failed to process inquiry:[^.]*\./gi, '')
+      .replace(/Error getting collection:[^.]*\./gi, '')
+      .replace(/Collection \[[a-f0-9-]+\] does not exist\.?/gi, '')
+      .replace(/\*{1,3}([^*\n]+)\*{1,3}/g, '$1')
+      .replace(/^\s*\*\s+/gm, '• ')
+      .replace(/\*/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    return cleaned;
+  };
+
+  // Send Message
   const handleSend = async (queryText) => {
     const q = (queryText || inputQuery).trim();
     if (!q || isLoading) return;
@@ -125,28 +171,45 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
 
     try {
       const res = await sendChatMessage(q, sessionId, 'web');
+      const isEscalated = res.escalated || res.status === 'ESCALATED_TO_HUMAN';
+
       const botMsg = {
         id: `bot_${Date.now()}`,
         sender: 'assistant',
-        content: res.response || 'No se obtuvo respuesta del sistema.',
+        content: cleanDisplayContent(res.response) || 'No se obtuvo información para esta consulta.',
         status: res.status,
         sources: res.sources || [],
         confidence_score: res.confidence_score || 0.0,
         latency_ms: res.telemetry?.latency_ms || 0.0,
+        escalated: isEscalated,
         created_at: new Date().toISOString(),
       };
+
       setMessages((prev) => [...prev, botMsg]);
+
+      // If escalated (Tier 3 exhaustion or ungrounded), open identification modal
+      if (isEscalated) {
+        setEscalationContext(q);
+        setTimeout(() => {
+          setIsEscalationModalOpen(true);
+        }, 600);
+      }
     } catch (err) {
       const errMsg = {
         id: `err_${Date.now()}`,
         sender: 'assistant',
-        content: `⚠️ Ocurrió un error al procesar tu consulta: ${err.message}`,
+        content: 'En este momento estamos experimentando una breve intermitencia técnica en el servicio. Si deseas atención inmediata, puedes solicitar conexión con un asesor académico.',
         sources: [],
         confidence_score: 0.0,
         latency_ms: 0.0,
+        escalated: true,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errMsg]);
+      setEscalationContext(q);
+      setTimeout(() => {
+        setIsEscalationModalOpen(true);
+      }, 600);
     } finally {
       setIsLoading(false);
     }
@@ -173,7 +236,7 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
             <div className="flex items-center justify-between">
               {sidebarOpen ? (
                 <button onClick={onNavigateToLanding} className="flex items-center gap-2.5 text-left group">
-                  <div className="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold shadow-md shadow-brand-lime/20">
                     <FaGraduationCap className="text-base" />
                   </div>
                   <div>
@@ -228,31 +291,35 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
             </div>
           )}
 
-          {/* History threads */}
+          {/* Real user history threads */}
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 custom-scroll">
             {sidebarOpen && (
               <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">
                 <span className="flex items-center gap-1.5"><FaHistory /> Historial</span>
-                <button onClick={() => { localStorage.clear(); setHistorySessions([]); }} className="hover:text-red-400 text-[10px] normal-case">Limpiar</button>
+                {savedSessions.length > 0 && (
+                  <button onClick={handleClearAllHistory} className="hover:text-red-400 text-[10px] normal-case transition-colors">
+                    Limpiar
+                  </button>
+                )}
               </div>
             )}
             {sidebarOpen && (
-              historySessions.length > 0 ? (
-                historySessions.map((s) => (
+              savedSessions.length > 0 ? (
+                savedSessions.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => handleSelectSession(s)}
+                    onClick={() => handleSelectSession(s.id)}
                     className={`w-full text-left px-2.5 py-2 rounded-lg text-xs truncate transition-all block ${
                       sessionId === s.id
                         ? 'bg-brand-lime/10 text-brand-lime border border-brand-lime/30 font-medium'
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <span className="block truncate">{s.title || s.id}</span>
+                    <span className="block truncate">{s.title}</span>
                   </button>
                 ))
               ) : (
-                <p className="text-[11px] text-slate-500 px-2 italic">Sin consultas previas</p>
+                sidebarOpen && <p className="text-[11px] text-slate-500 px-2 italic">Sin consultas previas</p>
               )
             )}
           </div>
@@ -260,12 +327,25 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
           {/* Bottom links */}
           {sidebarOpen && (
             <div className="p-3 border-t border-white/10 space-y-2">
+              <a
+                href={TELEGRAM_BOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#229ED9]/10 hover:bg-[#229ED9]/20 border border-[#229ED9]/30 text-[#229ED9] text-xs font-semibold transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <FaTelegramPlane />
+                  <span>Bot Telegram</span>
+                </div>
+                <span className="text-[10px] bg-[#229ED9]/20 px-1.5 py-0.5 rounded font-mono">24/7</span>
+              </a>
+
               <button
                 onClick={onNavigateToLanding}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-medium transition-colors"
               >
                 <FaArrowLeft className="text-xs" />
-                <span>Volver a Landing Page</span>
+                <span>Volver a la Landing</span>
               </button>
             </div>
           )}
@@ -278,144 +358,176 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
         {/* Top Minimal Action Bar */}
         <header className="h-14 border-b border-white/10 bg-[#0c0926]/90 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0 z-10">
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <button onClick={onNavigateToLanding} className="font-semibold text-white hover:text-brand-lime transition-colors">Vanguard Academy</button>
-            <span className="text-slate-600">/</span>
-            <span className="text-slate-300">Asesor Académico RAG</span>
-            <span className="text-slate-600">/</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-lime/10 text-brand-lime border border-brand-lime/30 font-mono">
-              Catálogo Oficial 2026
-            </span>
+            <span className="w-2 h-2 rounded-full bg-brand-lime animate-ping"></span>
+            <span className="text-slate-200 font-medium">Asesor Académico Virtual</span>
+            <span className="text-slate-500">•</span>
+            <span className="font-mono text-[11px] text-slate-400">Sesión: {sessionId}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                const transcript = messages.map(m => `[${m.sender.toUpperCase()}]: ${m.content}`).join('\n\n');
-                copyToClipboard(transcript);
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors"
+          <div className="flex items-center gap-3">
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#229ED9]/15 hover:bg-[#229ED9]/25 border border-[#229ED9]/30 text-[#229ED9] text-xs font-bold transition-all"
             >
-              {copied ? <FaCheck className="text-brand-lime text-xs" /> : <FaRegCopy className="text-xs" />}
-              <span>{copied ? 'Copiado' : 'Copiar Chat'}</span>
-            </button>
+              <FaTelegramPlane />
+              <span>Abrir en Telegram</span>
+            </a>
+
             <button
               onClick={onNavigateToAdmin}
-              className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 transition-colors"
             >
-              Admin
+              Staff Portal
             </button>
           </div>
         </header>
 
-        {/* Scrollable Chat Canvas */}
-        <div className="flex-1 overflow-y-auto custom-scroll px-4 md:px-12 py-8 pb-36 space-y-8">
-          <div className="max-w-4xl mx-auto space-y-8">
-            
-            {messages.map((msg, index) => (
-              <div key={msg.id || index} className="space-y-3 animate-fadeIn">
-                
-                {/* User Message Header */}
-                {msg.sender === 'user' ? (
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white font-medium text-base">
-                    <div className="text-[10px] text-brand-lime font-mono uppercase tracking-wider mb-1">Tu Pregunta</div>
-                    <p className="leading-relaxed">{msg.content}</p>
+        {/* Scrollable Chat Feed Area */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 md:px-12 max-w-4xl w-full mx-auto space-y-6 custom-scroll">
+          
+          {messages.map((m) => {
+            const isUser = m.sender === 'user';
+            const isEscalated = m.escalated || m.status === 'ESCALATED_TO_HUMAN';
+
+            if (isUser) {
+              return (
+                <div key={m.id} className="flex justify-end animate-fadeIn">
+                  <div className="bg-[#1e1948] text-white px-5 py-3.5 rounded-3xl rounded-br-md max-w-2xl text-sm leading-relaxed border border-white/10 shadow-lg">
+                    {m.content}
                   </div>
-                ) : (
-                  /* Assistant Grounded Response Card */
-                  <div className="space-y-4">
-                    
-                    {/* Metadata Pill Bar */}
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                      <span className="inline-flex items-center gap-1 text-brand-lime font-semibold">
-                        <FaCheckCircle className="text-xs" />
-                        Verificado por Documentos Oficiales
-                      </span>
-                      <span>•</span>
-                      <span className="font-mono text-slate-400 flex items-center gap-1">
-                        <FaClock className="text-xs" />
-                        Latencia: {Math.round(msg.latency_ms || 180)}ms
-                      </span>
-                      {msg.status && (
-                        <>
-                          <span>•</span>
-                          <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-brand-blue">
-                            {msg.status}
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Sources Pill Section (Perplexity Style) */}
-                    {msg.sources && msg.sources.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                          <FaBookOpen className="text-brand-blue text-xs" />
-                          <span>Fuentes consultadas ({msg.sources.length})</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                          {msg.sources.map((s, sIdx) => (
-                            <div key={sIdx} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-brand-lime/40 transition-colors">
-                              <div className="flex items-center justify-between text-xs font-semibold text-white">
-                                <span className="truncate">{s.document || 'cursos_y_modalidades.md'}</span>
-                                <span className="text-[9px] font-mono text-brand-lime bg-brand-lime/10 px-1 rounded">#{sIdx + 1}</span>
-                              </div>
-                              <p className="text-[11px] text-slate-400 mt-1 truncate">{s.section || 'Catálogo Oficial'}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Grounded Response Body */}
-                    <article className="p-6 rounded-3xl bg-[#100c2a] border border-white/10 text-slate-200 text-sm leading-relaxed whitespace-pre-line space-y-4 shadow-xl">
-                      {msg.content}
-                    </article>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Loading Indicator */}
-            {isLoading && (
-              <div className="p-6 rounded-3xl bg-[#100c2a] border border-white/10 space-y-3 animate-pulse">
-                <div className="flex items-center gap-2 text-xs text-brand-lime font-mono">
-                  <div className="w-2 h-2 rounded-full bg-brand-lime animate-ping"></div>
-                  <span>Consultando base de conocimientos oficial de Vanguard...</span>
                 </div>
-                <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                <div className="h-4 bg-white/5 rounded w-1/2"></div>
-              </div>
-            )}
+              );
+            }
 
-            {/* Suggested Questions Grid */}
-            <div className="pt-6 border-t border-white/10 space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Preguntas Frecuentes Sugeridas</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {QUICK_SUGGESTIONS.map((q, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSend(q)}
-                    className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-brand-lime/40 text-xs text-left text-slate-300 hover:text-white transition-all flex items-center justify-between group"
-                  >
-                    <span className="line-clamp-2">{q}</span>
-                    <FaPlus className="text-slate-500 group-hover:text-brand-lime text-xs flex-shrink-0 ml-2" />
-                  </button>
-                ))}
+            return (
+              <div key={m.id} className="space-y-3 animate-fadeIn">
+                {/* Assistant response header */}
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="w-6 h-6 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold text-xs">
+                    <FaRobot />
+                  </div>
+                  <span className="font-bold text-white">Vanguard Assistant</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-mono text-brand-lime">
+                    <FaCheckCircle className="text-[10px]" />
+                    {isEscalated ? 'Escalamiento Asesor' : 'Verificado por Documentos Oficiales'}
+                  </span>
+                  {m.latency_ms > 0 && (
+                    <>
+                      <span className="text-slate-600">•</span>
+                      <span className="text-[10px] font-mono text-slate-500">Latencia: {m.latency_ms.toFixed(0)}ms</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Main message card */}
+                <div className={`p-6 rounded-3xl border shadow-xl leading-relaxed text-sm ${
+                  isEscalated 
+                    ? 'bg-amber-950/20 border-amber-500/40 text-slate-100' 
+                    : 'bg-[#100c2a] border-white/10 text-slate-200'
+                }`}>
+                  <div className="prose prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap">
+                    {cleanDisplayContent(m.content)}
+                  </div>
+
+                  {/* If Escalated -> Render Human Advisor Handover Button */}
+                  {isEscalated && (
+                    <div className="mt-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 text-amber-300 text-xs font-semibold">
+                        <FaUserCheck className="text-base" />
+                        <span>¿Deseas atención personalizada en vivo con un asesor?</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEscalationContext(m.content);
+                          setIsEscalationModalOpen(true);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all hover:scale-105 cursor-pointer"
+                      >
+                        Conectar con Asesor
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Sources Pill Citations */}
+                  {m.sources && m.sources.length > 0 && (
+                    <div className="mt-5 pt-4 border-t border-white/10 space-y-2">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 block">
+                        Fuentes Citadas:
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {m.sources.map((s, sIdx) => (
+                          <div 
+                            key={sIdx}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-xs text-brand-lime font-mono"
+                          >
+                            <FaBookOpen className="text-[10px]" />
+                            <span>{s.document}</span>
+                            <span className="text-slate-500">•</span>
+                            <span className="text-slate-300">{s.section}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions bar (Copy) */}
+                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
+                    <span className="text-[10px] font-mono text-slate-500">
+                      Estado: {m.status || 'RESOLVED_BY_RAG'}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(m.content)}
+                      className="flex items-center gap-1 hover:text-white transition-colors text-[11px]"
+                    >
+                      {copied ? <FaCheck className="text-brand-lime" /> : <FaRegCopy />}
+                      <span>{copied ? 'Copiado' : 'Copiar respuesta'}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
+            );
+          })}
+
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#100c2a] border border-white/10 text-xs text-slate-400 animate-pulse max-w-md">
+              <FaRobot className="text-brand-lime text-base animate-bounce" />
+              <span>Consultando documentos oficiales y sintetizando respuesta...</span>
             </div>
+          )}
 
-            <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Suggestion Chips */}
+        <div className="px-6 py-2 border-t border-white/5 bg-[#070515] flex-shrink-0">
+          <div className="max-w-4xl mx-auto flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+            <span className="text-slate-500 font-mono text-[10px] whitespace-nowrap">Sugerencias:</span>
+            {QUICK_SUGGESTIONS.map((sug, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSend(sug)}
+                className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs whitespace-nowrap transition-colors flex-shrink-0"
+              >
+                {sug}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* ================= FLOATING SEARCH INPUT BAR ================= */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#070515] via-[#070515]/95 to-transparent pointer-events-none z-30">
-          <div className="max-w-4xl mx-auto pointer-events-auto space-y-2">
+        {/* Floating Centered Input Container */}
+        <div className="p-4 md:px-12 bg-[#0c0926]/95 border-t border-white/10 flex-shrink-0">
+          <div className="max-w-4xl mx-auto">
             <form 
               onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-              className="bg-[#100c2a] rounded-2xl border border-white/20 shadow-2xl p-2.5 focus-within:border-brand-lime focus-within:ring-2 focus-within:ring-brand-lime/20 transition-all"
+              className="relative rounded-2xl bg-[#141038] border border-white/15 focus-within:border-brand-lime shadow-2xl p-2 transition-colors"
             >
               <textarea
+                rows={2}
+                placeholder="Pregunta sobre programas, sedes Bogotá/Medellín, precios COP o pruebas de clasificación..."
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -424,8 +536,6 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
                     handleSend();
                   }
                 }}
-                placeholder="Escribe tu consulta sobre cursos, sedes en Bogotá/Medellín, tarifas en COP o pruebas de nivel..."
-                rows={1}
                 className="w-full bg-transparent border-0 focus:ring-0 text-sm text-white placeholder:text-slate-500 resize-none outline-none px-3 py-1 block"
               />
 
@@ -447,13 +557,30 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
               </div>
             </form>
 
-            <p className="text-center text-[11px] text-slate-500">
-              Vanguard Assistant responde exclusivamente con base en reglamentos académicos oficiales 2026.
+            <p className="text-[10px] text-center text-slate-500 mt-2">
+              Vanguard Assistant responde únicamente con base en documentos oficiales institucionales.
             </p>
           </div>
         </div>
-
       </main>
+
+      {/* Human Escalation Identification Form Modal */}
+      <EscalationModal
+        isOpen={isEscalationModalOpen}
+        initialQuery={escalationContext}
+        onClose={() => setIsEscalationModalOpen(false)}
+        onStartLiveChat={(info) => {
+          setLiveChatSession(info);
+        }}
+      />
+
+      {/* Floating Live Human Advisor WebSocket Chat Window */}
+      {liveChatSession && (
+        <LiveAdvisorChat
+          sessionInfo={liveChatSession}
+          onClose={() => setLiveChatSession(null)}
+        />
+      )}
     </div>
   );
 }
