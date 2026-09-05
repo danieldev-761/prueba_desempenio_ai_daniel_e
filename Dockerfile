@@ -40,6 +40,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy backend application source code, operational scripts, and raw markdown knowledge base
 COPY --chown=appuser:appgroup backend/app /app/app
 COPY --chown=appuser:appgroup backend/scripts /app/scripts
+COPY --chown=appuser:appgroup backend/data/raw /app/seed_data/raw
 COPY --chown=appuser:appgroup backend/data/raw /app/data/raw
 
 # Copy production-ready React frontend bundle directly into /app/dist

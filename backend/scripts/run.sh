@@ -5,8 +5,14 @@ echo "================================================================"
 echo " Starting Colombian Language Academy Assistant Container"
 echo "================================================================"
 
-# Verify data directory existence
-mkdir -p /app/data
+# Verify data directory existence and ensure raw directory structure
+mkdir -p /app/data/raw /app/data/chroma_db
+
+# If persistent volume is mounted and /app/data/raw is empty, populate from container seed image
+if [ -d "/app/seed_data/raw" ] && [ -z "$(ls -A /app/data/raw 2>/dev/null)" ]; then
+    echo "[*] Populating initial knowledge base documents into persistent volume..."
+    cp -rn /app/seed_data/raw/* /app/data/raw/ 2>/dev/null || true
+fi
 
 # Run Vector Ingestion on cold boot if ChromaDB collection is empty or uninitialized
 if [ ! -d "/app/data/chroma_db" ] || [ -z "$(ls -A /app/data/chroma_db 2>/dev/null)" ]; then

@@ -13,6 +13,16 @@ from app.core.logging import logger
 from app.services.vector_store import VectorStoreService
 
 DATA_RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
+SEED_RAW_DIR = Path(__file__).resolve().parent.parent / "seed_data" / "raw"
+
+
+def get_raw_dir() -> Path:
+    """Returns data/raw if present and populated, otherwise falls back to seed_data/raw."""
+    if DATA_RAW_DIR.exists() and list(DATA_RAW_DIR.glob("*.md")):
+        return DATA_RAW_DIR
+    if SEED_RAW_DIR.exists() and list(SEED_RAW_DIR.glob("*.md")):
+        return SEED_RAW_DIR
+    return DATA_RAW_DIR
 
 
 def extract_sections_from_markdown(content: str, filename: str) -> List[Dict[str, Any]]:
@@ -49,13 +59,14 @@ def run_ingestion(reset: bool = True) -> int:
     Reads all markdown files from backend/data/raw, chunks them using RecursiveCharacterTextSplitter,
     and indexes them into ChromaDB vector store.
     """
-    if not DATA_RAW_DIR.exists():
-        logger.error(f"Raw data directory does not exist: {DATA_RAW_DIR}")
+    raw_dir = get_raw_dir()
+    if not raw_dir.exists():
+        logger.error(f"Raw data directory does not exist: {raw_dir}")
         return 0
 
-    markdown_files = list(DATA_RAW_DIR.glob("*.md"))
+    markdown_files = list(raw_dir.glob("*.md"))
     if not markdown_files:
-        logger.warning(f"No markdown documents found in {DATA_RAW_DIR}")
+        logger.warning(f"No markdown documents found in {raw_dir}")
         return 0
 
     splitter = RecursiveCharacterTextSplitter(
