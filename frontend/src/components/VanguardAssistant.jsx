@@ -11,7 +11,8 @@ import EscalationModal from './EscalationModal';
 import LiveAdvisorChat from './LiveAdvisorChat';
 import VanguardLogo from './VanguardLogo';
 
-const TELEGRAM_BOT_URL = 'https://t.me/CL_Academy_bot';
+const TELEGRAM_BOT_NAME = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'Vanguard_academy_bot';
+const TELEGRAM_BOT_URL = `https://t.me/${TELEGRAM_BOT_NAME}`;
 
 const QUICK_SUGGESTIONS = [
   "¿Cuánto cuesta el intensivo de inglés y qué horarios tienen en Bogotá?",

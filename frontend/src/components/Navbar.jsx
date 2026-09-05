@@ -25,7 +25,7 @@ export default function Navbar({ onOpenAdminModal, onOpenContactModal, onOpenEsc
         <div className="flex items-center gap-3">
           {/* Telegram Channel Button */}
           {(() => {
-            const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'CL_Academy_bot';
+            const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'Vanguard_academy_bot';
             return (
               <a
                 href={`https://t.me/${botName}`}

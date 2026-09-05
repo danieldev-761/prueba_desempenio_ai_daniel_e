@@ -11,7 +11,8 @@ import {
 import GhostCursor from './GhostCursor';
 import VanguardLogo from './VanguardLogo';
 
-const TELEGRAM_BOT_URL = 'https://t.me/CL_Academy_bot';
+const TELEGRAM_BOT_NAME = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'Vanguard_academy_bot';
+const TELEGRAM_BOT_URL = `https://t.me/${TELEGRAM_BOT_NAME}`;
 
 export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
   const [activeSection, setActiveSection] = useState('inicio');

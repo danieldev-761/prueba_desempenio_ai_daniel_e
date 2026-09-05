@@ -49,7 +49,7 @@ class Settings(BaseSettings):
 
     # Telegram Integration
     TELEGRAM_BOT_TOKEN: str = Field(default="", description="Telegram Bot token")
-    TELEGRAM_BOT_NAME: str = Field(default="CL_Academy_bot", description="Telegram Bot Username")
+    TELEGRAM_BOT_NAME: str = Field(default="Vanguard_academy_bot", description="Telegram Bot Username")
 
     # CORS
     CORS_ORIGINS: Union[List[str], str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
