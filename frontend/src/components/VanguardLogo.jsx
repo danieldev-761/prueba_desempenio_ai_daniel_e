@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 /**
  * VanguardLogo
@@ -107,7 +107,7 @@ export default function VanguardLogo({
           <span className={`font-display ${currentSize.text} tracking-[0.16em] uppercase text-white font-bold leading-none`}>
             Vanguard
           </span>
-          <span className={`${currentSize.sub} text-brand-lime font-mono tracking-[0.22em] uppercase font-semibold mt-1`}>
+          <span className={`${currentSize.sub} text-brand-lime font-mono tracking-[0.22em] uppercase font-semibold mt-1 hidden sm:block`}>
             {subtitle}
           </span>
         </div>

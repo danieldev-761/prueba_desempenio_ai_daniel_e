@@ -406,14 +406,14 @@ export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
     <div className="min-h-screen bg-[#070515] text-slate-100 flex flex-col font-sans selection:bg-brand-lime selection:text-brand-dark">
       
       {/* Top Header Bar */}
-      <header className="h-16 border-b border-white/10 bg-[#0c0926]/90 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0 z-20">
-        <div className="flex items-center gap-4">
+      <header className="h-16 border-b border-white/10 bg-[#0c0926]/90 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between flex-shrink-0 z-20">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button onClick={onNavigateToLanding} className="hover:opacity-90 transition-opacity text-left">
             <VanguardLogo size="sm" subtitle="Staff Administration" />
           </button>
 
-          {/* Navigation Tabs */}
-          <nav className="hidden md:flex items-center gap-2 ml-8 bg-white/5 p-1 rounded-xl border border-white/10 text-xs">
+          {/* Navigation Tabs - Desktop */}
+          <nav className="hidden md:flex items-center gap-2 ml-4 lg:ml-8 bg-white/5 p-1 rounded-xl border border-white/10 text-xs">
             <button
               onClick={() => setActiveTab('escalations')}
               className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
@@ -462,33 +462,83 @@ export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
         </div>
 
         {/* User profile & Actions */}
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-2 sm:gap-3 text-xs">
           <button onClick={onNavigateToChat} className="hidden sm:flex items-center gap-1.5 text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">
             <FaRobot />
             <span>Asistente IA</span>
           </button>
           <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-            <span className="font-mono text-slate-300 font-bold hidden sm:inline">{currentUser?.username || 'admin'}</span>
+            <span className="font-mono text-slate-300 font-bold hidden md:inline">{currentUser?.username || 'admin'}</span>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold border border-red-500/30 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold border border-red-500/30 transition-colors"
             >
               <FaSignOutAlt />
-              <span>Salir</span>
+              <span className="hidden sm:inline">Salir</span>
             </button>
           </div>
         </div>
       </header>
 
+      {/* Mobile Navigation Tab Bar */}
+      <div className="md:hidden bg-[#0c0926] border-b border-white/10 px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar z-10 flex-shrink-0">
+        <button
+          onClick={() => setActiveTab('escalations')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 ${
+            activeTab === 'escalations' ? 'bg-brand-lime text-brand-dark shadow-sm' : 'text-slate-400 bg-white/5 hover:text-white'
+          }`}
+        >
+          <FaComments className="text-xs" />
+          <span>Casos</span>
+          {escalatedSessions.filter((s) => s.status === 'WAITING').length > 0 && (
+            <span className="bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-mono">
+              {escalatedSessions.filter((s) => s.status === 'WAITING').length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('metrics')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 ${
+            activeTab === 'metrics' ? 'bg-brand-lime text-brand-dark shadow-sm' : 'text-slate-400 bg-white/5 hover:text-white'
+          }`}
+        >
+          <FaChartBar className="text-xs" />
+          <span>Métricas</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('crm')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 ${
+            activeTab === 'crm' ? 'bg-brand-lime text-brand-dark shadow-sm' : 'text-slate-400 bg-white/5 hover:text-white'
+          }`}
+        >
+          <FaUserCheck className="text-xs" />
+          <span>CRM</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 ${
+            activeTab === 'settings' ? 'bg-brand-lime text-brand-dark shadow-sm' : 'text-slate-400 bg-white/5 hover:text-white'
+          }`}
+        >
+          <FaKey className="text-xs" />
+          <span>Proveedores</span>
+        </button>
+      </div>
+
       {/* Main Workspace Body */}
-      <main className="flex-1 overflow-y-auto p-6 max-w-7xl w-full mx-auto space-y-6">
+      <main className="flex-1 overflow-y-auto p-3 sm:p-6 max-w-7xl w-full mx-auto space-y-4 sm:space-y-6">
         
         {/* ================= TAB 1: ESCALATED SESSIONS & LIVE CHAT ================= */}
         {activeTab === 'escalations' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-[calc(100vh-140px)]">
             
             {/* Sessions List */}
-            <div className="lg:col-span-1 bg-[#100c2a] border border-white/10 rounded-3xl p-5 flex flex-col overflow-hidden">
+            <div className={`lg:col-span-1 bg-[#100c2a] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col overflow-hidden ${
+              selectedSession ? 'hidden lg:flex' : 'flex'
+            } min-h-[480px] lg:min-h-0`}>
               <div className="flex items-center justify-between pb-4 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <FaComments className="text-brand-lime" />
@@ -537,19 +587,30 @@ export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
             </div>
 
             {/* Selected Session Live Chat Workspace */}
-            <div className="lg:col-span-2 bg-[#100c2a] border border-white/10 rounded-3xl flex flex-col overflow-hidden">
+            <div className={`lg:col-span-2 bg-[#100c2a] border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden ${
+              !selectedSession ? 'hidden lg:flex' : 'flex'
+            } min-h-[480px] lg:min-h-0`}>
               {selectedSession ? (
                 <>
                   {/* Chat Top Banner */}
-                  <div className="p-4 border-b border-white/10 bg-[#141038] flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-white">{selectedSession.full_name}</h4>
-                        <span className="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-brand-lime">
-                          {selectedSession.channel.toUpperCase()}
-                        </span>
+                  <div className="p-3 sm:p-4 border-b border-white/10 bg-[#141038] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setSelectedSession(null)} 
+                        className="lg:hidden p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                        title="Volver a la lista de casos"
+                      >
+                        <FaArrowLeft className="text-xs" />
+                      </button>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-sm text-white">{selectedSession.full_name}</h4>
+                          <span className="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-brand-lime">
+                            {selectedSession.channel.toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 font-mono">Sesión: {selectedSession.session_id} • Doc: {selectedSession.national_id}</p>
                       </div>
-                      <p className="text-xs text-slate-400 font-mono">Sesión: {selectedSession.session_id} • Doc: {selectedSession.national_id}</p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1019,17 +1080,17 @@ export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
 
             {/* Satisfaction Summary */}
             {crmSummary && (
-              <div className="p-5 rounded-2xl bg-[#100c2a] border border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#100c2a] border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold flex-shrink-0">
                     <FaStar />
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-white">Calificación Promedio de Atención</h4>
+                    <h4 className="text-sm sm:text-base font-bold text-white">Calificación Promedio de Atención</h4>
                     <p className="text-xs text-slate-400">{crmSummary.total_reviews} reseñas de satisfacción enviadas</p>
                   </div>
                 </div>
-                <div className="font-display text-4xl text-amber-400">
+                <div className="font-display text-3xl sm:text-4xl text-amber-400">
                   {crmSummary.average_rating} / 5.0
                 </div>
               </div>
@@ -1123,7 +1184,7 @@ export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
               </div>
             )}
 
-            <form onSubmit={handleSaveProviders} className="p-8 rounded-3xl bg-[#100c2a] border border-white/10 space-y-6">
+            <form onSubmit={handleSaveProviders} className="p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-[#100c2a] border border-white/10 space-y-6">
               <div>
                 <label className="text-xs font-bold uppercase text-slate-400 block mb-3">Proveedor LLM Activo</label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

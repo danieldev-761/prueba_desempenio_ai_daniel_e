@@ -3,7 +3,8 @@ import {
   FaGlobeAmericas, FaMapMarkerAlt, FaCreditCard, 
   FaClock, FaCheckCircle, FaLaptopHouse, FaSchool, FaCertificate, 
   FaRocket, FaShieldAlt, FaArrowRight, FaTelegramPlane, FaWhatsapp,
-  FaAward, FaCalendarAlt, FaRobot, FaArrowUp, FaHome
+  FaAward, FaCalendarAlt, FaRobot, FaArrowUp, FaHome,
+  FaBars, FaTimes
 } from 'react-icons/fa';
 import { 
   SiZoom, SiGooglemeet 
@@ -18,6 +19,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
   const [activeSection, setActiveSection] = useState('inicio');
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -71,14 +73,36 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close mobile menu on ESC key or desktop resize
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    };
+    const handleResize = () => {
+      if (window.innerWidth >= 1280) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   const scrollToHome = (e) => {
     if (e) e.preventDefault();
+    setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setActiveSection('inicio');
   };
 
   const scrollToSection = (e, sectionId) => {
     if (e) e.preventDefault();
+    setMobileMenuOpen(false);
     const el = document.getElementById(sectionId);
     if (el) {
       const navOffset = isScrolled ? 76 : 84;
@@ -114,6 +138,15 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
         }}
       />
 
+      {/* ================= MOBILE MENU BACKDROP ================= */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden pointer-events-auto transition-opacity duration-300"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ================= TOP FLOATING NAVIGATION DOCK ================= */}
       <header 
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ease-out pointer-events-none ${
@@ -144,11 +177,11 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
           </a>
 
           {/* Nav links with real-time active indicator */}
-          <nav className="hidden lg:flex items-center gap-1.5 bg-white/5 p-1 rounded-full border border-white/10 text-xs font-medium">
+          <nav className="hidden xl:flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/10 text-xs font-medium">
             <a 
               href="#inicio" 
               onClick={scrollToHome}
-              className={`transition-all py-1 px-3 rounded-full flex items-center gap-1.5 ${
+              className={`inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'inicio' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -161,7 +194,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#programas" 
               onClick={(e) => scrollToSection(e, 'programas')}
-              className={`transition-all py-1 px-3 rounded-full ${
+              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'programas' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -173,7 +206,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#modalidades" 
               onClick={(e) => scrollToSection(e, 'modalidades')}
-              className={`transition-all py-1 px-3 rounded-full ${
+              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'modalidades' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -185,7 +218,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#horarios" 
               onClick={(e) => scrollToSection(e, 'horarios')}
-              className={`transition-all py-1 px-3 rounded-full ${
+              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'horarios' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -197,7 +230,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#precios" 
               onClick={(e) => scrollToSection(e, 'precios')}
-              className={`transition-all py-1 px-3 rounded-full ${
+              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'precios' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -209,7 +242,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#placement-test" 
               onClick={(e) => scrollToSection(e, 'placement-test')}
-              className={`transition-all py-1 px-3.5 rounded-full ${
+              className={`inline-flex items-center justify-center py-1.5 px-3.5 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'placement-test' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-brand-lime/90 hover:text-brand-lime hover:bg-white/5'
@@ -219,35 +252,234 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             </a>
           </nav>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+          {/* Action buttons and mobile trigger */}
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+            {/* Telegram Channel Button */}
             <a
               href={TELEGRAM_BOT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 bg-[#229ED9] hover:bg-[#1e8ec3] text-white px-3 py-1.5 rounded-full font-bold text-xs transition-all hover:scale-105 shadow-md shadow-[#229ED9]/20 flex-shrink-0"
+              className="hidden sm:inline-flex items-center justify-center gap-1.5 h-8 px-3.5 rounded-full font-semibold text-xs text-white bg-[#229ED9] hover:bg-[#1e8ec3] transition-all hover:scale-105 shadow-sm shadow-[#229ED9]/25 flex-shrink-0 leading-none text-center whitespace-nowrap"
               title="Abrir Bot Oficial en Telegram"
             >
-              <FaTelegramPlane className="text-sm" />
-              <span className="hidden sm:inline">Bot Telegram</span>
+              <FaTelegramPlane className="text-xs flex-shrink-0" />
+              <span>Bot Telegram</span>
             </a>
 
+            {/* Vanguard AI Web Assistant */}
             <button
               onClick={onNavigateToChat}
-              className="flex items-center gap-1.5 bg-brand-lime hover:bg-[#b0f55c] text-brand-dark px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs transition-all hover:scale-105 shadow-md shadow-brand-lime/20 flex-shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 h-8 px-3 sm:px-3.5 rounded-full font-bold text-xs text-brand-dark bg-brand-lime hover:bg-[#b0f55c] transition-all hover:scale-105 shadow-sm shadow-brand-lime/25 flex-shrink-0 leading-none text-center whitespace-nowrap"
+              title="Chatear con Vanguard AI"
             >
-              <FaRobot className="text-sm" />
+              <FaRobot className="text-xs flex-shrink-0" />
               <span>Vanguard AI</span>
             </button>
 
+            {/* Staff / Admin Access */}
             <button
               onClick={onNavigateToAdmin}
-              className="text-xs px-2.5 py-1.5 rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-colors flex-shrink-0"
+              className="hidden md:inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-full border border-white/20 text-white/80 hover:text-white hover:border-white/40 bg-white/5 hover:bg-white/10 text-xs font-medium transition-all flex-shrink-0 leading-none text-center whitespace-nowrap"
+              title="Acceso Portal Staff / Administrativo"
             >
-              Staff
+              <FaShieldAlt className="text-xs flex-shrink-0" />
+              <span>Staff</span>
+            </button>
+
+            {/* Mobile / Tablet Hamburger Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="xl:hidden inline-flex items-center justify-center w-8 h-8 rounded-full border border-white/20 text-slate-200 hover:text-white bg-white/5 hover:bg-white/10 transition-colors focus:outline-none flex-shrink-0"
+              aria-label={mobileMenuOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
+              title={mobileMenuOpen ? "Cerrar menú" : "Menú de navegación"}
+            >
+              {mobileMenuOpen ? <FaTimes className="text-sm" /> : <FaBars className="text-sm" />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="xl:hidden pointer-events-auto max-w-lg mx-auto mt-2 px-3 sm:px-4">
+            <div 
+              className="rounded-2xl border border-white/15 bg-[#0a0722]/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(189,240,82,0.08)] ring-1 ring-white/10 p-4 sm:p-5 flex flex-col gap-3 animate-in fade-in slide-in-from-top-3 duration-200"
+            >
+              {/* Mobile menu header */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                  Navegación
+                </span>
+                <span className="text-[10px] font-semibold text-brand-lime bg-brand-lime/10 px-2 py-0.5 rounded-full border border-brand-lime/20">
+                  Vanguard 2026
+                </span>
+              </div>
+
+              {/* Navigation links with uniform alignment */}
+              <nav className="flex flex-col gap-1.5">
+                <a 
+                  href="#inicio" 
+                  onClick={scrollToHome}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    activeSection === 'inicio'
+                      ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-brand-lime flex-shrink-0">
+                      <FaHome className="text-xs" />
+                    </div>
+                    <span>Inicio</span>
+                  </div>
+                  <FaArrowRight className="text-[10px] text-slate-500" />
+                </a>
+
+                <a 
+                  href="#programas" 
+                  onClick={(e) => scrollToSection(e, 'programas')}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    activeSection === 'programas'
+                      ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-brand-lime flex-shrink-0">
+                      <FaGlobeAmericas className="text-xs" />
+                    </div>
+                    <span>Idiomas & MCER</span>
+                  </div>
+                  <FaArrowRight className="text-[10px] text-slate-500" />
+                </a>
+
+                <a 
+                  href="#modalidades" 
+                  onClick={(e) => scrollToSection(e, 'modalidades')}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    activeSection === 'modalidades'
+                      ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-brand-lime flex-shrink-0">
+                      <FaMapMarkerAlt className="text-xs" />
+                    </div>
+                    <span>Sedes & Modalidades</span>
+                  </div>
+                  <FaArrowRight className="text-[10px] text-slate-500" />
+                </a>
+
+                <a 
+                  href="#horarios" 
+                  onClick={(e) => scrollToSection(e, 'horarios')}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    activeSection === 'horarios'
+                      ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-brand-lime flex-shrink-0">
+                      <FaClock className="text-xs" />
+                    </div>
+                    <span>Horarios</span>
+                  </div>
+                  <FaArrowRight className="text-[10px] text-slate-500" />
+                </a>
+
+                <a 
+                  href="#precios" 
+                  onClick={(e) => scrollToSection(e, 'precios')}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    activeSection === 'precios'
+                      ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-brand-lime flex-shrink-0">
+                      <FaCreditCard className="text-xs" />
+                    </div>
+                    <span>Precios COP</span>
+                  </div>
+                  <FaArrowRight className="text-[10px] text-slate-500" />
+                </a>
+
+                <a 
+                  href="#placement-test" 
+                  onClick={(e) => scrollToSection(e, 'placement-test')}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    activeSection === 'placement-test'
+                      ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm'
+                      : 'text-brand-lime/90 hover:text-brand-lime hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-brand-lime flex-shrink-0">
+                      <FaRocket className="text-xs" />
+                    </div>
+                    <span>Placement Test</span>
+                  </div>
+                  <FaArrowRight className="text-[10px] text-slate-500" />
+                </a>
+              </nav>
+
+              {/* Action buttons inside mobile drawer - uniform layout */}
+              <div className="pt-2.5 border-t border-white/10 flex flex-col gap-2">
+                <a
+                  href={TELEGRAM_BOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#229ED9] hover:bg-[#1e8ec3] transition-all shadow-md shadow-[#229ED9]/20"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-white flex-shrink-0">
+                      <FaTelegramPlane className="text-xs" />
+                    </div>
+                    <span>Bot Telegram Oficial</span>
+                  </div>
+                  <span className="text-[10px] font-mono bg-black/25 px-2 py-0.5 rounded-full">24/7</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onNavigateToChat();
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-brand-dark bg-brand-lime hover:bg-[#b0f55c] transition-all shadow-md shadow-brand-lime/20"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-brand-dark/15 flex items-center justify-center text-brand-dark flex-shrink-0">
+                      <FaRobot className="text-xs" />
+                    </div>
+                    <span>Chatear con Vanguard AI</span>
+                  </div>
+                  <span className="text-[10px] font-mono bg-brand-dark/15 px-2 py-0.5 rounded-full">En Vivo</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onNavigateToAdmin();
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium border border-white/20 text-white/80 hover:text-white hover:border-white/40 bg-white/5 hover:bg-white/10 transition-all"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-white flex-shrink-0">
+                      <FaShieldAlt className="text-xs" />
+                    </div>
+                    <span>Acceso Portal Staff</span>
+                  </div>
+                  <FaArrowRight className="text-[10px] text-slate-500" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ================= HERO SECTION WITH GHOSTCURSOR ================= */}
@@ -256,9 +488,9 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
 
         {/* Floating pill tags */}
         <div className="relative z-10 max-w-4xl mx-auto space-y-5 pointer-events-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-lime/10 border border-brand-lime/30 text-brand-lime text-[11px] font-semibold uppercase tracking-widest animate-pulse">
-            <FaAward className="text-xs" />
-            <span>Acreditación Oficial MCER (A1 a C1) • Sedes Bogotá & Medellín</span>
+          <div className="inline-flex items-center justify-center text-center gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-brand-lime/10 border border-brand-lime/30 text-brand-lime text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider sm:tracking-widest animate-pulse max-w-full">
+            <FaAward className="text-xs flex-shrink-0" />
+            <span className="truncate sm:overflow-visible">Acreditación Oficial MCER (A1 a C1) • Sedes Bogotá & Medellín</span>
           </div>
 
           <h1 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase tracking-tight text-white leading-[1.08]">
@@ -701,7 +933,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <VanguardLogo size="sm" subtitle="Colombia 2026" />
           </a>
 
-          <div className="flex items-center gap-5">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-center">
             <a href="#programas" onClick={(e) => scrollToSection(e, 'programas')} className="hover:text-white transition-colors">Programas</a>
             <a href="#precios" onClick={(e) => scrollToSection(e, 'precios')} className="hover:text-white transition-colors">Tarifas COP</a>
             <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer" className="hover:text-[#229ED9] transition-colors flex items-center gap-1">

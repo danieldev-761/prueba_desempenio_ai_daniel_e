@@ -4,7 +4,7 @@ import {
   FaBookOpen, FaCheckCircle, FaClock, FaMapMarkerAlt, 
   FaMoneyBillWave, FaCertificate, FaArrowLeft, FaTrash, 
   FaChevronLeft, FaChevronRight, FaRegCopy, FaCheck, FaRobot,
-  FaTelegramPlane, FaUserCheck, FaExclamationTriangle
+  FaTelegramPlane, FaUserCheck, FaExclamationTriangle, FaBars
 } from 'react-icons/fa';
 import { sendChatMessage } from '../services/api';
 import EscalationModal from './EscalationModal';
@@ -37,7 +37,7 @@ const DEFAULT_WELCOME_MSG = {
 };
 
 export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdmin }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
   const [inputQuery, setInputQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -226,11 +226,22 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
   return (
     <div className="flex h-screen bg-[#070515] text-slate-100 font-sans overflow-hidden antialiased">
       
+      {/* Mobile Drawer Backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm lg:hidden transition-opacity duration-300"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ================= COMPACT PERPLEXITY-STYLE SIDEBAR ================= */}
       <aside 
-        className={`${
+        className={`fixed lg:relative inset-y-0 left-0 z-50 lg:z-20 w-72 lg:${
           sidebarOpen ? 'w-64' : 'w-16'
-        } bg-[#0c0926] border-r border-white/10 flex-shrink-0 flex flex-col justify-between transition-all duration-300 z-20`}
+        } bg-[#0c0926] border-r border-white/10 flex-shrink-0 flex flex-col justify-between transition-transform lg:transition-all duration-300 shadow-2xl lg:shadow-none ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
       >
         <div className="flex flex-col h-full overflow-hidden">
           {/* Header brand */}
@@ -247,8 +258,8 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
               )}
               <button 
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-white/5 transition-colors"
-                title={sidebarOpen ? "Colapsar barra" : "Expandir barra"}
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                title={sidebarOpen ? "Cerrar panel" : "Expandir panel"}
               >
                 {sidebarOpen ? <FaChevronLeft className="text-xs" /> : <FaChevronRight className="text-xs" />}
               </button>
@@ -257,7 +268,10 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
             {/* New query button */}
             {sidebarOpen && (
               <button
-                onClick={handleNewSearch}
+                onClick={() => {
+                  handleNewSearch();
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) setSidebarOpen(false);
+                }}
                 className="mt-3 w-full flex items-center justify-between px-3 py-2 rounded-xl bg-brand-lime/10 border border-brand-lime/30 hover:bg-brand-lime/20 text-xs font-semibold text-brand-lime transition-all group"
               >
                 <div className="flex items-center gap-2">
@@ -272,16 +286,34 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
           {/* Nav quick topics */}
           {sidebarOpen && (
             <div className="p-2.5 space-y-1 text-xs border-b border-white/5">
-              <button onClick={() => handleSend("¿Cuáles son los horarios y sedes en Bogotá y Medellín?")} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left">
-                <FaMapMarkerAlt className="text-brand-orange text-xs" />
+              <button 
+                onClick={() => {
+                  handleSend("¿Cuáles son los horarios y sedes en Bogotá y Medellín?");
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) setSidebarOpen(false);
+                }} 
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
+              >
+                <FaMapMarkerAlt className="text-brand-orange text-xs flex-shrink-0" />
                 <span className="truncate">Sedes Bogotá & Medellín</span>
               </button>
-              <button onClick={() => handleSend("¿Cuáles son los precios y formas de pago en COP?")} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left">
-                <FaMoneyBillWave className="text-brand-lime text-xs" />
+              <button 
+                onClick={() => {
+                  handleSend("¿Cuáles son los precios y formas de pago en COP?");
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) setSidebarOpen(false);
+                }} 
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
+              >
+                <FaMoneyBillWave className="text-brand-lime text-xs flex-shrink-0" />
                 <span className="truncate">Precios & Pagos COP</span>
               </button>
-              <button onClick={() => handleSend("¿Cómo son los niveles del Marco Común Europeo MCER?")} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left">
-                <FaCertificate className="text-brand-blue text-xs" />
+              <button 
+                onClick={() => {
+                  handleSend("¿Cómo son los niveles del Marco Común Europeo MCER?");
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) setSidebarOpen(false);
+                }} 
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
+              >
+                <FaCertificate className="text-brand-blue text-xs flex-shrink-0" />
                 <span className="truncate">Pensum MCER (A1 a C1)</span>
               </button>
             </div>
@@ -304,7 +336,10 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
                 savedSessions.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => handleSelectSession(s.id)}
+                    onClick={() => {
+                      handleSelectSession(s.id);
+                      if (typeof window !== 'undefined' && window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
                     className={`w-full text-left px-2.5 py-2 rounded-lg text-xs truncate transition-all block ${
                       sessionId === s.id
                         ? 'bg-brand-lime/10 text-brand-lime border border-brand-lime/30 font-medium'
@@ -351,37 +386,65 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
       {/* ================= MAIN ASSISTANT CANVAS ================= */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#070515]">
         
-        {/* Top Minimal Action Bar */}
-        <header className="h-14 border-b border-white/10 bg-[#0c0926]/90 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0 z-10">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-brand-lime animate-ping"></span>
-            <span className="text-slate-200 font-medium">Asesor Académico Virtual</span>
-            <span className="text-slate-500">•</span>
-            <span className="font-mono text-[11px] text-slate-400">Sesión: {sessionId}</span>
+        {/* Top Action Bar - fully responsive */}
+        <header className="h-14 border-b border-white/10 bg-[#0c0926]/90 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between flex-shrink-0 z-10">
+          <div className="flex items-center gap-2">
+            {/* Mobile menu toggle button */}
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Abrir panel lateral"
+              title="Panel lateral"
+            >
+              <FaBars className="text-sm" />
+            </button>
+
+            {/* Back to landing */}
+            <button
+              type="button"
+              onClick={onNavigateToLanding}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              title="Volver a la Landing"
+            >
+              <FaArrowLeft className="text-xs" />
+            </button>
+
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-brand-lime animate-ping flex-shrink-0"></span>
+              <span className="text-slate-200 font-semibold text-xs truncate max-w-[130px] sm:max-w-none">
+                Vanguard Assistant
+              </span>
+              <span className="text-slate-500 hidden sm:inline">•</span>
+              <span className="font-mono text-[11px] text-slate-400 hidden md:inline truncate max-w-[110px]">
+                {sessionId}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <a
               href={TELEGRAM_BOT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#229ED9]/15 hover:bg-[#229ED9]/25 border border-[#229ED9]/30 text-[#229ED9] text-xs font-bold transition-all"
+              className="inline-flex items-center justify-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-full bg-[#229ED9]/15 hover:bg-[#229ED9]/25 border border-[#229ED9]/30 text-[#229ED9] text-xs font-bold transition-all whitespace-nowrap"
+              title="Abrir en Telegram"
             >
-              <FaTelegramPlane />
-              <span>Abrir en Telegram</span>
+              <FaTelegramPlane className="text-xs flex-shrink-0" />
+              <span className="hidden sm:inline">Telegram</span>
             </a>
 
             <button
               onClick={onNavigateToAdmin}
-              className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 transition-colors"
+              className="inline-flex items-center justify-center h-8 text-xs text-slate-400 hover:text-white px-2.5 sm:px-3 rounded-full border border-white/10 hover:border-white/30 transition-colors whitespace-nowrap"
             >
-              Staff Portal
+              Staff
             </button>
           </div>
         </header>
 
         {/* Scrollable Chat Feed Area */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 md:px-12 max-w-4xl w-full mx-auto space-y-6 custom-scroll">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-6 md:px-12 py-4 sm:py-6 max-w-4xl w-full mx-auto space-y-4 sm:space-y-6 custom-scroll">
           
           {messages.map((m) => {
             const isUser = m.sender === 'user';
@@ -499,7 +562,7 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
         </div>
 
         {/* Quick Suggestion Chips */}
-        <div className="px-6 py-2 border-t border-white/5 bg-[#070515] flex-shrink-0">
+        <div className="px-3 sm:px-6 py-2 border-t border-white/5 bg-[#070515] flex-shrink-0">
           <div className="max-w-4xl mx-auto flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
             <span className="text-slate-500 font-mono text-[10px] whitespace-nowrap">Sugerencias:</span>
             {QUICK_SUGGESTIONS.map((sug, idx) => (
@@ -515,7 +578,7 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
         </div>
 
         {/* Floating Centered Input Container */}
-        <div className="p-4 md:px-12 bg-[#0c0926]/95 border-t border-white/10 flex-shrink-0">
+        <div className="p-3 sm:p-4 md:px-12 bg-[#0c0926]/95 border-t border-white/10 flex-shrink-0">
           <div className="max-w-4xl mx-auto">
             <form 
               onSubmit={(e) => { e.preventDefault(); handleSend(); }}
