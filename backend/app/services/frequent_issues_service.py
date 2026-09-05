@@ -62,6 +62,60 @@ EXHAUSTION_PATTERNS = [
 UNSUPPORTED_LANGUAGES = ["ruso", "japones", "japonesa", "mandarin", "chino", "arabe", "coreano", "hebreo", "polaco", "sueco", "holandes", "turco", "griego", "latin", "guarani", "esperanto"]
 SUPPORTED_LANG_KEYS = ["ingles", "frances", "aleman", "italiano", "portugues"]
 
+SUPPORTED_LANGUAGE_OFFERS = {
+    "frances": {
+        "title": "Programa Oficial de Francés Vanguard",
+        "response": (
+            "¡Sí! En Vanguard, Academia de Idiomas Colombiana, ofrecemos el programa oficial de **Francés** estructurado desde el nivel inicial A1 "
+            "hasta el nivel B2 según el Marco Común Europeo de Referencia (MCER). Desarrollamos fluidez conversacional, "
+            "comprensión auditiva, pronunciación precisa y preparación para certificaciones internacionales oficiales DELF/DALF.\n\n"
+            "Está disponible en modalidades **100% Virtual en Vivo** (Zoom/Meet) y **Presencial en Sedes** (Bogotá y Medellín), "
+            "en turnos **Intensivo** (Lunes a Viernes, 2 horas diarias / 40 horas al mes) y **Sabatino** (Sábados de 8:00 AM a 1:00 PM / 20 horas al mes).\n\n"
+            "¿Te gustaría agendar una prueba de clasificación gratuita de 25 minutos o consultar los horarios disponibles?"
+        ),
+    },
+    "aleman": {
+        "title": "Programa Oficial de Alemán Vanguard",
+        "response": (
+            "¡Sí! En Vanguard contamos con el programa oficial de **Alemán** estructurado desde el nivel A1 hasta el nivel B2 bajo el estándar MCER. "
+            "El plan de estudios enfatiza estructuras gramaticales aplicadas, inmersión auditiva y preparación especializada para los exámenes internacionales Goethe-Zertifikat.\n\n"
+            "Se imparte tanto en modalidad **100% Virtual en Vivo** como **Presencial en Sedes** (Bogotá y Medellín), "
+            "con franjas de turno **Intensivo** (Lunes a Viernes, 40h/mes) y **Sabatino** (20h/mes).\n\n"
+            "¿Deseas información sobre las franjas horarias, tarifas en COP o agendar tu prueba diagnóstica gratuita?"
+        ),
+    },
+    "ingles": {
+        "title": "Programa Insignia de Inglés Vanguard",
+        "response": (
+            "¡Sí! Ofrecemos nuestro programa insignia de **Inglés General y de Negocios** desde el nivel principiante A1 hasta el nivel avanzado operacional C1 del MCER. "
+            "El programa incluye clubes de conversación inmersivos, docentes certificados C1/C2 y preparación para exámenes internacionales (IELTS, TOEFL y Cambridge).\n\n"
+            "Disponible en modalidad **Presencial en Sedes** (Bogotá: Chapinero y Cl 100; Medellín: El Poblado) y **100% Virtual en Vivo**, "
+            "en turnos **Intensivo** (Lunes a Viernes, 40h/mes) y **Sabatino** (20h/mes).\n\n"
+            "¿Te gustaría agendar tu prueba de nivelación gratuita de 25 minutos o consultar nuestras tarifas con descuento?"
+        ),
+    },
+    "italiano": {
+        "title": "Programa Oficial de Italiano Vanguard",
+        "response": (
+            "¡Sí! En Vanguard disponemos del programa oficial de **Italiano** en niveles desde A1 hasta B2 según el marco MCER. "
+            "El enfoque es 100% interactivo y comunicativo, combinando inmersión conversacional, cultura y preparación para certificaciones oficiales CILS/CELI.\n\n"
+            "Se ofrece en modalidades **100% Virtual en Vivo** y **Presencial en Sedes** (Bogotá y Medellín), "
+            "en turnos **Intensivo** (L-V, 2h diarias) y **Sabatino** (Sábados de 8:00 AM a 1:00 PM).\n\n"
+            "¿Te gustaría conocer las tarifas mensuales en COP o iniciar tu proceso de inscripción?"
+        ),
+    },
+    "portugues": {
+        "title": "Programa Oficial de Portugués Vanguard",
+        "response": (
+            "¡Sí! En Vanguard impartimos **Portugués Brasileño** desde el nivel A1 hasta el B2 bajo el estándar internacional MCER, "
+            "con énfasis en expresión oral, fluidez conversacional, entornos profesionales y preparación para el examen oficial Celpe-Bras.\n\n"
+            "Disponible en modalidad **100% Virtual en Vivo** y **Presencial en Sedes** (Bogotá y Medellín) "
+            "en horarios **Intensivos** (Lunes a Viernes, 40h/mes) o **Sabatinos** (20h/mes).\n\n"
+            "¿Deseas recibir detalles sobre las tarifas en COP y facilidades de pago (PSE, Nequi, Tarjetas)?"
+        ),
+    },
+}
+
 UNSUPPORTED_CITIES = ["cali", "barranquilla", "cartagena", "bucaramanga", "pereira", "manizales", "cucuta", "santa marta", "ibague", "villavicencio", "pasto", "armenia", "popayan", "neiva", "valledupar", "monteria", "sincelejo"]
 SUPPORTED_CAMPUSES = ["bogota", "medellin"]
 
@@ -217,6 +271,61 @@ class FrequentIssuesService:
                     "además de preparación para exámenes internacionales (IELTS, TOEFL, Cambridge, DELF y Goethe)."
                 ),
                 "matched_rule": "unsupported_lang_guard",
+                "tier": 1,
+                "is_escalate": False,
+            }
+
+        # 0.3.1: Supported Languages Catalog Direct Affirmation (Only for direct availability queries)
+        matched_supported_langs = [
+            lang for lang in SUPPORTED_LANG_KEYS
+            if re.search(rf"\b{re.escape(lang)}\b", norm_query)
+        ]
+        
+        has_other_intent = any(k in norm_query for k in [
+            "sabado", "horario", "precio", "costo", "tarifa", "reprobe", "perdi", "habilitar", 
+            "constancia", "certificado", "inscripci", "pago", "cuanto", "sede", "donde", "traducci"
+        ])
+        
+        is_direct_lang_ask = any(re.search(p, norm_query) for p in [
+            r"^(tienen|ofrecen|hay|dan|dictan|ensenan|enseñan)\s+(el\s+)?(idioma\s+)?(de\s+)?(cursos?\s+de\s+|clases?\s+de\s+|programa\s+de\s+)?(ingles|frances|aleman|italiano|portugues)\??$",
+            r"^(cursos?|clases?|programa)\s+(de\s+)?(ingles|frances|aleman|italiano|portugues)\??$",
+            r"^(tienen|ofrecen|hay)\s+(cursos?|clases?|programa)\s+(de\s+)?(ingles|frances|aleman|italiano|portugues)\??$",
+            r"^(quiero\s+aprender|deseo\s+estudiar)\s+(ingles|frances|aleman|italiano|portugues)\??$",
+            r"^(ingles|frances|aleman|italiano|portugues)\??$",
+        ])
+
+        if not has_other_intent and is_direct_lang_ask and len(matched_supported_langs) == 1:
+            target_lang = matched_supported_langs[0]
+            info = SUPPORTED_LANGUAGE_OFFERS[target_lang]
+            logger.info(f"Fast Guard: Supported language affirmation matched for '{target_lang}'")
+            return {
+                "category": f"supported_lang_{target_lang}",
+                "title": info["title"],
+                "response": info["response"],
+                "matched_rule": f"supported_lang_{target_lang}_guard",
+                "tier": 1,
+                "is_escalate": False,
+            }
+
+        # 0.3.2: General Languages Catalog Inquiry (e.g. "que idiomas tienen", "cuales idiomas ofrecen", "que cursos tienen")
+        if any(re.search(p, norm_query) for p in [
+            r"\b(que\s+idiomas|cuales\s+idiomas|que\s+cursos\s+(tienen|ofrecen|hay)|cuales\s+cursos\s+(tienen|ofrecen|hay)|oferta\s+de\s+idiomas|catalogo\s+de\s+idiomas|que\s+ensenan|que\s+enseñan)\b"
+        ]):
+            logger.info("Fast Guard: General languages catalog inquiry matched")
+            return {
+                "category": "catalog_languages",
+                "title": "Catálogo Oficial de Idiomas Vanguard",
+                "response": (
+                    "En Vanguard, Academia de Idiomas Colombiana, ofrecemos programas oficiales estructurados bajo el Marco Común Europeo (MCER) en 5 idiomas:\n\n"
+                    "1. **Inglés General y de Negocios** (Niveles A1 hasta C1)\n"
+                    "2. **Francés** (Niveles A1 hasta B2 • Preparación DELF/DALF)\n"
+                    "3. **Alemán** (Niveles A1 hasta B2 • Preparación Goethe-Zertifikat)\n"
+                    "4. **Italiano** (Niveles A1 hasta B2 • Certificaciones CILS/CELI)\n"
+                    "5. **Portugués Brasileño** (Niveles A1 hasta B2 • Preparación Celpe-Bras)\n\n"
+                    "Todos nuestros cursos cuentan con modalidades **100% Virtual en Vivo** y **Presencial en Sedes** (Bogotá y Medellín), "
+                    "en turnos **Intensivos** (Lunes a Viernes, 40h/mes) y **Sabatinos** (20h/mes). ¿Sobre cuál de estos idiomas te gustaría recibir más información?"
+                ),
+                "matched_rule": "all_languages_catalog_guard",
                 "tier": 1,
                 "is_escalate": False,
             }

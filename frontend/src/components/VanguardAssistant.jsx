@@ -9,6 +9,7 @@ import {
 import { sendChatMessage } from '../services/api';
 import EscalationModal from './EscalationModal';
 import LiveAdvisorChat from './LiveAdvisorChat';
+import VanguardLogo from './VanguardLogo';
 
 const TELEGRAM_BOT_URL = 'https://t.me/CL_Academy_bot';
 
@@ -235,19 +236,13 @@ export default function VanguardAssistant({ onNavigateToLanding, onNavigateToAdm
           <div className="p-3.5 border-b border-white/10">
             <div className="flex items-center justify-between">
               {sidebarOpen ? (
-                <button onClick={onNavigateToLanding} className="flex items-center gap-2.5 text-left group">
-                  <div className="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold shadow-md shadow-brand-lime/20">
-                    <FaGraduationCap className="text-base" />
-                  </div>
-                  <div>
-                    <span className="font-display text-lg tracking-wider text-white block uppercase leading-none">Vanguard</span>
-                    <span className="text-[9px] text-brand-lime font-mono uppercase">AI Assistant</span>
-                  </div>
+                <button onClick={onNavigateToLanding} className="flex items-center gap-2.5 text-left group hover:opacity-90 transition-opacity">
+                  <VanguardLogo size="sm" subtitle="AI Assistant" />
                 </button>
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold mx-auto">
-                  <FaGraduationCap className="text-base" />
-                </div>
+                <button onClick={onNavigateToLanding} className="mx-auto block hover:opacity-90 transition-opacity" title="Vanguard AI Assistant">
+                  <VanguardLogo size="sm" showText={false} />
+                </button>
               )}
               <button 
                 onClick={() => setSidebarOpen(!sidebarOpen)}

@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  FaGlobeAmericas, FaMapMarkerAlt, FaCreditCard, FaGraduationCap, 
+  FaGlobeAmericas, FaMapMarkerAlt, FaCreditCard, 
   FaClock, FaCheckCircle, FaLaptopHouse, FaSchool, FaCertificate, 
   FaRocket, FaShieldAlt, FaArrowRight, FaTelegramPlane, FaWhatsapp,
-  FaAward, FaCalendarAlt, FaRobot
+  FaAward, FaCalendarAlt, FaRobot, FaArrowUp, FaHome
 } from 'react-icons/fa';
 import { 
   SiZoom, SiGooglemeet 
 } from 'react-icons/si';
 import GhostCursor from './GhostCursor';
+import VanguardLogo from './VanguardLogo';
 
 const TELEGRAM_BOT_URL = 'https://t.me/CL_Academy_bot';
 
 export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
   const [activeSection, setActiveSection] = useState('inicio');
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -23,28 +26,55 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
   });
   const [formSubmitted, setFormSubmitted] = useState(false);
 
-  // Dynamic active section observer on scroll
+  // Dynamic active section observer in real time
   useEffect(() => {
     const sectionIds = ['inicio', 'programas', 'modalidades', 'horarios', 'precios', 'placement-test'];
+
     const handleScroll = () => {
-      const scrollPos = window.scrollY + 180;
+      const scrollY = window.scrollY;
+      setIsScrolled(scrollY > 40);
+      setShowBackToTop(scrollY > 280);
+
+      // 1. If at or near top of the page, unconditionally activate 'inicio'
+      if (scrollY < 180) {
+        setActiveSection('inicio');
+        return;
+      }
+
+      // 2. If scrolled to the bottom of the page, activate the last section ('placement-test')
+      if ((window.innerHeight + Math.ceil(scrollY)) >= document.documentElement.scrollHeight - 60) {
+        setActiveSection('placement-test');
+        return;
+      }
+
+      // 3. Viewport intersection: find the section containing the trigger line (200px from top)
+      const targetPoint = 200;
+      let matchedSection = 'inicio';
+
       for (const id of sectionIds) {
         const el = document.getElementById(id);
         if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPos >= top && scrollPos < top + height) {
-            setActiveSection(id);
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= targetPoint && rect.bottom > targetPoint) {
+            matchedSection = id;
             break;
           }
         }
       }
+
+      setActiveSection(matchedSection);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const scrollToHome = (e) => {
+    if (e) e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveSection('inicio');
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -54,71 +84,128 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
   return (
     <div className="bg-[#070515] text-slate-200 min-h-screen flex flex-col font-sans relative overflow-x-hidden selection:bg-brand-lime selection:text-brand-dark">
       
-      {/* ================= TOP NAVIGATION ================= */}
-      <header className="sticky top-0 z-50 w-full bg-[#070515]/90 backdrop-blur-md border-b border-white/10 transition-all">
-        <div className="max-w-7xl mx-auto px-5 py-3.5 flex items-center justify-between">
-          <a href="#inicio" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-brand-lime text-brand-dark flex items-center justify-center font-bold shadow-lg shadow-brand-lime/20 group-hover:scale-105 transition-transform">
-              <FaGraduationCap className="text-xl" />
-            </div>
-            <div>
-              <span className="font-display text-2xl uppercase tracking-wider text-white block leading-none">Vanguard</span>
-              <span className="text-[10px] text-brand-lime font-medium uppercase tracking-widest">Academia de Idiomas</span>
-            </div>
+      {/* ================= TOP DIFFUSION & BLUR FEATHERING VEIL ================= */}
+      <div 
+        className={`fixed top-0 inset-x-0 h-28 sm:h-32 z-40 pointer-events-none transition-opacity duration-500 ${
+          isScrolled ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{
+          background: 'linear-gradient(to bottom, rgba(7, 5, 21, 0.95) 0%, rgba(7, 5, 21, 0.7) 40%, rgba(7, 5, 21, 0.25) 75%, transparent 100%)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+        }}
+      />
+
+      {/* ================= TOP FLOATING NAVIGATION DOCK ================= */}
+      <header 
+        className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ease-out pointer-events-none ${
+          isScrolled ? 'pt-3 sm:pt-4 px-3 sm:px-6' : 'pt-0 px-0'
+        }`}
+      >
+        <div 
+          className={`mx-auto pointer-events-auto transition-all duration-500 ease-out flex items-center justify-between ${
+            isScrolled 
+              ? 'max-w-6xl border border-white/15 rounded-full px-4 sm:px-6 py-2.5 shadow-[0_16px_40px_-6px_rgba(0,0,0,0.9),0_0_24px_rgba(189,240,82,0.06)] ring-1 ring-white/10' 
+              : 'max-w-7xl border-b border-white/10 px-5 sm:px-6 py-3.5'
+          }`}
+          style={{
+            backgroundColor: isScrolled ? 'rgba(10, 7, 34, 0.75)' : 'rgba(7, 5, 21, 0.70)',
+            backdropFilter: 'blur(28px) saturate(190%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+          }}
+        >
+          
+          {/* Brand Logo with Smooth Home Click */}
+          <a 
+            href="#inicio" 
+            onClick={scrollToHome}
+            className="group transition-transform hover:opacity-95"
+            title="Vanguard Academia de Idiomas - Ir al Inicio"
+          >
+            <VanguardLogo size="md" />
           </a>
 
-          {/* Nav links with active indicator */}
-          <nav className="hidden lg:flex items-center gap-6 bg-white/5 px-6 py-2 rounded-full border border-white/10 text-sm font-medium">
+          {/* Nav links with real-time active indicator */}
+          <nav className="hidden lg:flex items-center gap-1.5 bg-white/5 p-1.5 rounded-full border border-white/10 text-xs font-medium">
+            <a 
+              href="#inicio" 
+              onClick={scrollToHome}
+              className={`transition-all py-1.5 px-3 rounded-full flex items-center gap-1.5 ${
+                activeSection === 'inicio' 
+                  ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <FaHome className="text-xs" />
+              <span>Inicio</span>
+            </a>
+
             <a 
               href="#programas" 
-              className={`transition-colors py-1 px-2.5 rounded-full ${
-                activeSection === 'programas' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-slate-300 hover:text-white'
+              className={`transition-all py-1.5 px-3 rounded-full ${
+                activeSection === 'programas' 
+                  ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
               }`}
             >
               Idiomas & MCER
             </a>
+
             <a 
               href="#modalidades" 
-              className={`transition-colors py-1 px-2.5 rounded-full ${
-                activeSection === 'modalidades' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-slate-300 hover:text-white'
+              className={`transition-all py-1.5 px-3 rounded-full ${
+                activeSection === 'modalidades' 
+                  ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
               }`}
             >
               Sedes & Modalidades
             </a>
+
             <a 
               href="#horarios" 
-              className={`transition-colors py-1 px-2.5 rounded-full ${
-                activeSection === 'horarios' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-slate-300 hover:text-white'
+              className={`transition-all py-1.5 px-3 rounded-full ${
+                activeSection === 'horarios' 
+                  ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
               }`}
             >
               Horarios
             </a>
+
             <a 
               href="#precios" 
-              className={`transition-colors py-1 px-2.5 rounded-full ${
-                activeSection === 'precios' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-slate-300 hover:text-white'
+              className={`transition-all py-1.5 px-3 rounded-full ${
+                activeSection === 'precios' 
+                  ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
               }`}
             >
               Precios COP
             </a>
+
             <a 
               href="#placement-test" 
-              className={`transition-colors py-1 px-2.5 rounded-full ${
-                activeSection === 'placement-test' ? 'text-brand-lime bg-brand-lime/10 font-bold' : 'text-brand-lime/90 hover:text-brand-lime'
+              className={`transition-all py-1.5 px-3.5 rounded-full ${
+                activeSection === 'placement-test' 
+                  ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
+                  : 'text-brand-lime/90 hover:text-brand-lime hover:bg-white/5'
               }`}
             >
               Placement Test
             </a>
           </nav>
 
-          {/* Action buttons including Telegram */}
+          {/* Action buttons */}
           <div className="flex items-center gap-3">
             <a
               href={TELEGRAM_BOT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-[#229ED9] hover:bg-[#1e8ec3] text-white px-4 py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all hover:scale-105 shadow-md shadow-[#229ED9]/20"
-              title="Abrir Bot en Telegram"
+              className="flex items-center gap-2 bg-[#229ED9] hover:bg-[#1e8ec3] text-white px-3.5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all hover:scale-105 shadow-md shadow-[#229ED9]/20"
+              title="Abrir Bot Oficial en Telegram"
             >
               <FaTelegramPlane className="text-base" />
               <span className="hidden sm:inline">Bot Telegram</span>
@@ -126,7 +213,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
 
             <button
               onClick={onNavigateToChat}
-              className="flex items-center gap-2 bg-brand-lime hover:bg-[#b0f55c] text-brand-dark px-4 sm:px-5 py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all hover:scale-105 shadow-md shadow-brand-lime/20"
+              className="flex items-center gap-2 bg-brand-lime hover:bg-[#b0f55c] text-brand-dark px-4 sm:px-5 py-2 rounded-full font-bold text-xs sm:text-sm transition-all hover:scale-105 shadow-md shadow-brand-lime/20"
             >
               <FaRobot className="text-base" />
               <span>Vanguard AI</span>
@@ -143,11 +230,11 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
       </header>
 
       {/* ================= HERO SECTION WITH GHOSTCURSOR ================= */}
-      <section id="inicio" className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-5 pt-12 pb-20 overflow-hidden bg-gradient-to-b from-[#070515] via-[#0c0926] to-[#070515]">
-        <GhostCursor color="#c6ff7c" trailLength={36} inertia={0.68} brightness={1.6} />
+      <section id="inicio" className="relative min-h-[92vh] flex flex-col justify-center items-center text-center px-5 pt-28 sm:pt-36 pb-20 overflow-hidden bg-gradient-to-b from-[#070515] via-[#0c0926] to-[#070515]">
+        <GhostCursor color="#bdf052" trailLength={24} inertia={0.74} brightness={0.80} zIndex={0} className="opacity-55 pointer-events-none" />
 
         {/* Floating pill tags */}
-        <div className="relative z-10 max-w-5xl mx-auto space-y-6">
+        <div className="relative z-10 max-w-5xl mx-auto space-y-6 pointer-events-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-lime/10 border border-brand-lime/30 text-brand-lime text-xs font-semibold uppercase tracking-widest animate-pulse">
             <FaAward className="text-sm" />
             <span>Acreditación Oficial MCER (A1 a C1) • Sedes Bogotá & Medellín</span>
@@ -217,7 +304,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
       </section>
 
       {/* ================= SECTION 1: IDIOMAS Y PENSUM MCER ================= */}
-      <section id="programas" className="py-24 px-5 border-t border-white/10 bg-[#070515]">
+      <section id="programas" className="relative z-10 py-24 px-5 border-t border-white/10 bg-[#070515]">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-mono uppercase tracking-widest text-brand-lime bg-brand-lime/10 px-3.5 py-1 rounded-full border border-brand-lime/20">
@@ -262,7 +349,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
       </section>
 
       {/* ================= SECTION 2: SEDES Y MODALIDADES ================= */}
-      <section id="modalidades" className="py-24 px-5 border-t border-white/10 bg-[#0a0720]">
+      <section id="modalidades" className="relative z-10 py-24 px-5 border-t border-white/10 bg-[#0a0720]">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-mono uppercase tracking-widest text-brand-blue bg-brand-blue/10 px-3.5 py-1 rounded-full border border-brand-blue/20">
@@ -324,7 +411,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
       </section>
 
       {/* ================= SECTION 3: HORARIOS Y TURNOS ================= */}
-      <section id="horarios" className="py-24 px-5 border-t border-white/10 bg-[#070515]">
+      <section id="horarios" className="relative z-10 py-24 px-5 border-t border-white/10 bg-[#070515]">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-mono uppercase tracking-widest text-brand-yellow bg-brand-yellow/10 px-3.5 py-1 rounded-full border border-brand-yellow/20">
@@ -393,7 +480,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
       </section>
 
       {/* ================= SECTION 4: PRECIOS Y MEDIOS DE PAGO EN COP ================= */}
-      <section id="precios" className="py-24 px-5 border-t border-white/10 bg-[#0a0720]">
+      <section id="precios" className="relative z-10 py-24 px-5 border-t border-white/10 bg-[#0a0720]">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-mono uppercase tracking-widest text-brand-lime bg-brand-lime/10 px-3.5 py-1 rounded-full border border-brand-lime/20">
@@ -481,7 +568,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
       </section>
 
       {/* ================= SECTION 5: PLACEMENT TEST / INSCRIPCIÓN ================= */}
-      <section id="placement-test" className="py-24 px-5 border-t border-white/10 bg-[#070515]">
+      <section id="placement-test" className="relative z-10 py-24 px-5 border-t border-white/10 bg-[#070515]">
         <div className="max-w-5xl mx-auto rounded-3xl bg-gradient-to-r from-[#120d36] to-[#18114a] border border-brand-lime/30 p-8 sm:p-12 shadow-2xl relative overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative z-10">
             <div className="space-y-5">
@@ -581,17 +668,17 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
       </section>
 
       {/* ================= FOOTER ================= */}
+      {/* ================= FOOTER ================= */}
       <footer className="py-12 px-5 border-t border-white/10 bg-[#050310] text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold">
-              <FaGraduationCap className="text-base" />
-            </div>
-            <div>
-              <strong className="text-white block font-display uppercase tracking-wider">Vanguard Language Academy</strong>
-              <span className="text-[10px] text-slate-500">Acreditación Oficial • Colombia 2026</span>
-            </div>
-          </div>
+          <a 
+            href="#inicio" 
+            onClick={scrollToHome}
+            className="hover:opacity-90 transition-opacity"
+            title="Vanguard Academia de Idiomas - Ir al Inicio"
+          >
+            <VanguardLogo size="sm" subtitle="Colombia 2026" />
+          </a>
 
           <div className="flex items-center gap-6">
             <a href="#programas" className="hover:text-white transition-colors">Programas</a>
@@ -612,6 +699,18 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
           </p>
         </div>
       </footer>
+
+      {/* Floating Back to Top / Home Arrow Button */}
+      <button
+        onClick={scrollToHome}
+        aria-label="Volver al inicio"
+        className={`fixed bottom-6 right-6 z-40 w-12 h-12 rounded-2xl bg-[#0c0926]/90 border border-brand-lime/40 text-brand-lime shadow-xl shadow-brand-lime/20 backdrop-blur-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-brand-lime hover:text-brand-dark active:scale-95 group ${
+          showBackToTop ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-6 pointer-events-none'
+        }`}
+        title="Ir al inicio"
+      >
+        <FaArrowUp className="text-sm group-hover:-translate-y-0.5 transition-transform" />
+      </button>
     </div>
   );
 }

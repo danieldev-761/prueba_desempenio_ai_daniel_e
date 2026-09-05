@@ -111,6 +111,18 @@ class SemanticCacheService:
                 cached_response = metadata.get("response", "")
                 sources = json.loads(metadata.get("sources_json", "[]"))
 
+                # Strict Entity Disambiguation (prevent cross-language false hits)
+                LANGUAGES_SET = {"ingles", "frances", "aleman", "italiano", "portugues", "ruso", "chino", "japones", "coreano", "arabe"}
+                q_langs = {lang for lang in LANGUAGES_SET if re.search(rf"\b{re.escape(lang)}\b", norm_q)}
+                cached_text = normalize_cache_key(doc.page_content + " " + str(metadata.get("original_query", "")) + " " + cached_response)
+                c_langs = {lang for lang in LANGUAGES_SET if re.search(rf"\b{re.escape(lang)}\b", cached_text)}
+
+                if q_langs and c_langs and not (q_langs & c_langs):
+                    logger.warning(
+                        f"Semantic Cache REJECTED cross-language collision: query has {q_langs} vs cached {c_langs}"
+                    )
+                    return None
+
                 logger.info(
                     f"Semantic Cache HIT for '{query[:40]}...' (Similarity: {calculated_similarity:.4f} >= {self.similarity_threshold})"
                 )

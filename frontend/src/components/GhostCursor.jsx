@@ -7,11 +7,11 @@ import * as THREE from 'three';
 export default function GhostCursor({
   className = '',
   style = {},
-  trailLength = 32,
-  inertia = 0.7,
-  brightness = 1.6,
-  color = '#c6ff7c',
-  zIndex = 1,
+  trailLength = 26,
+  inertia = 0.72,
+  brightness = 0.85,
+  color = '#bdf052',
+  zIndex = 0,
 }) {
   const hostRef = useRef(null);
 
@@ -125,7 +125,7 @@ export default function GhostCursor({
         }
 
         colorAcc *= iBrightness;
-        float outAlpha = clamp(alphaAcc * iOpacity * 0.85, 0.0, 0.85);
+        float outAlpha = clamp(alphaAcc * iOpacity * 0.55, 0.0, 0.55);
         gl_FragColor = vec4(colorAcc, outAlpha);
       }
     `;

@@ -13,6 +13,7 @@ import {
   getCRMProfiles, getCRMReviews, getCRMSummary, getWebSocketChatUrl,
   testProviderConnection
 } from '../services/api';
+import VanguardLogo from './VanguardLogo';
 
 export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
   const [token, setToken] = useState(() => localStorage.getItem('vanguard_admin_jwt') || '');
@@ -331,8 +332,8 @@ export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
       <div className="min-h-screen bg-[#070515] flex flex-col items-center justify-center p-5 font-sans relative selection:bg-brand-lime selection:text-brand-dark">
         <div className="max-w-md w-full p-8 rounded-3xl bg-[#100c2a] border border-white/10 shadow-2xl space-y-6 relative z-10">
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-brand-lime text-brand-dark flex items-center justify-center font-bold mx-auto text-xl shadow-lg shadow-brand-lime/20">
-              <FaShieldAlt />
+            <div className="flex justify-center pb-2">
+              <VanguardLogo size="lg" showText={false} />
             </div>
             <h2 className="font-display text-2xl uppercase tracking-wider text-white">Staff Management Portal</h2>
             <p className="text-xs text-slate-400">Acceso seguro para Asesores Académicos y Administradores</p>
@@ -407,15 +408,9 @@ export default function AdminPortal({ onNavigateToLanding, onNavigateToChat }) {
       {/* Top Header Bar */}
       <header className="h-16 border-b border-white/10 bg-[#0c0926]/90 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0 z-20">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold shadow-md shadow-brand-lime/20">
-              <FaShieldAlt className="text-base" />
-            </div>
-            <div>
-              <span className="font-display text-lg tracking-wider text-white uppercase block leading-none">Vanguard</span>
-              <span className="text-[9px] text-brand-lime font-mono uppercase">Staff Administration</span>
-            </div>
-          </div>
+          <button onClick={onNavigateToLanding} className="hover:opacity-90 transition-opacity text-left">
+            <VanguardLogo size="sm" subtitle="Staff Administration" />
+          </button>
 
           {/* Navigation Tabs */}
           <nav className="hidden md:flex items-center gap-2 ml-8 bg-white/5 p-1 rounded-xl border border-white/10 text-xs">
