@@ -21,21 +21,20 @@ async def test_admin_login_invalid_password():
 @pytest.mark.asyncio
 async def test_admin_login_success():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        # Default password is admin123 or ADMIN_API_KEY
-        password = settings.ADMIN_API_KEY if settings.ADMIN_API_KEY and settings.ADMIN_API_KEY != "admin" else "admin12345"
-        response = await ac.post("/api/v1/auth/login", json={"username": "admin", "password": password})
+        password = settings.ADMIN_DEFAULT_PASSWORD
+        response = await ac.post("/api/v1/auth/login", json={"username": settings.ADMIN_DEFAULT_USER, "password": password})
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
         assert data["token_type"] == "bearer"
-        assert data["user"]["username"] == "admin"
+        assert data["user"]["username"] == settings.ADMIN_DEFAULT_USER
 
 
 @pytest.mark.asyncio
 async def test_settings_provider_switching_with_jwt():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        password = settings.ADMIN_API_KEY if settings.ADMIN_API_KEY and settings.ADMIN_API_KEY != "admin" else "admin12345"
-        login_res = await ac.post("/api/v1/auth/login", json={"username": "admin", "password": password})
+        password = settings.ADMIN_DEFAULT_PASSWORD
+        login_res = await ac.post("/api/v1/auth/login", json={"username": settings.ADMIN_DEFAULT_USER, "password": password})
         token = login_res.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 

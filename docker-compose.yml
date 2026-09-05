@@ -14,6 +14,9 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_BOT_NAME=${TELEGRAM_BOT_NAME:-Vanguard_academy_bot}
+      - ADMIN_DEFAULT_USER=${ADMIN_DEFAULT_USER:-admin}
+      - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-admin12345}
+      - ADMIN_FORCE_PASSWORD_SYNC=${ADMIN_FORCE_PASSWORD_SYNC:-false}
       - ADMIN_API_KEY=${ADMIN_API_KEY:-admin_secret_pin_2026}
       - CHROMA_PERSIST_DIR=/app/data/chroma_db
       - DATABASE_URL=sqlite+aiosqlite:////app/data/academy.db

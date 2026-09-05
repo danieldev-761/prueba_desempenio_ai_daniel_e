@@ -53,19 +53,23 @@ async def init_db() -> None:
     # Seed default admin user and initial system settings
     async with AsyncSessionLocal() as session:
         try:
-            admin_stmt = select(AdminUser).where(AdminUser.username == "admin")
+            admin_user_seed = settings.ADMIN_DEFAULT_USER.strip()
+            admin_stmt = select(AdminUser).where(AdminUser.username == admin_user_seed)
             res = await session.execute(admin_stmt)
             existing_admin = res.scalars().first()
             if not existing_admin:
-                default_password = settings.ADMIN_API_KEY if settings.ADMIN_API_KEY and settings.ADMIN_API_KEY != "admin" else "admin12345"
                 new_admin = AdminUser(
-                    username="admin",
-                    password_hash=get_password_hash(default_password),
+                    username=admin_user_seed,
+                    password_hash=get_password_hash(settings.ADMIN_DEFAULT_PASSWORD),
                     full_name="Vanguard Administrator",
                     is_active=True,
                 )
                 session.add(new_admin)
-                logger.info(f"Default admin user seeded (username: 'admin').")
+                logger.info(f"Default admin user '{admin_user_seed}' seeded into database from environment settings.")
+            elif settings.ADMIN_FORCE_PASSWORD_SYNC:
+                existing_admin.password_hash = get_password_hash(settings.ADMIN_DEFAULT_PASSWORD)
+                existing_admin.is_active = True
+                logger.info(f"Admin password hash synced for '{admin_user_seed}' via ADMIN_FORCE_PASSWORD_SYNC flag.")
 
             # Seed LLM Provider settings if not present
             provider_stmt = select(SystemSetting).where(SystemSetting.key == "ACTIVE_LLM_PROVIDER")

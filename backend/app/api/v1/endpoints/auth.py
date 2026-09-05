@@ -74,34 +74,27 @@ async def get_current_admin(
     )
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., description="Current password")
+    new_password: str = Field(..., min_length=6, description="New password (min 6 characters)")
+
+
 @router.post("/login", response_model=LoginResponse, summary="Admin login with secure password verification")
 async def admin_login(
     payload: LoginRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
-    stmt = select(AdminUser).where(AdminUser.username == payload.username.strip())
+    req_username = payload.username.strip().lower()
+
+    stmt = select(AdminUser).where(AdminUser.username == req_username)
     res = await db.execute(stmt)
     user = res.scalars().first()
 
     if not user or not verify_password(payload.password, user.password_hash):
-        # Also check fallback password if default admin
-        if payload.username == "admin" and (payload.password == settings.ADMIN_API_KEY or payload.password == "admin12345"):
-            if not user:
-                from app.core.security import get_password_hash
-                user = AdminUser(
-                    username="admin",
-                    password_hash=get_password_hash(payload.password),
-                    full_name="Vanguard Administrator",
-                    is_active=True,
-                )
-                db.add(user)
-                await db.commit()
-                await db.refresh(user)
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Nombre de usuario o contraseña incorrectos.",
-            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Nombre de usuario o contraseña incorrectos.",
+        )
 
     if not user.is_active:
         raise HTTPException(
@@ -137,3 +130,22 @@ async def get_my_profile(
         created_at=current_admin.created_at or datetime.now(timezone.utc),
         last_login=current_admin.last_login,
     )
+
+
+@router.post("/change-password", summary="Change admin password securely")
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_admin: AdminUser = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db_session),
+):
+    if not verify_password(payload.current_password, current_admin.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La contraseña actual proporcionada no es correcta.",
+        )
+
+    from app.core.security import get_password_hash
+    current_admin.password_hash = get_password_hash(payload.new_password)
+    await db.commit()
+
+    return {"message": "Contraseña actualizada exitosamente."}

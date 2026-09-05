@@ -213,10 +213,8 @@ async def get_provider_settings(
     groq_key = db_settings.get("GROQ_API_KEY") or settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
     openai_key = db_settings.get("OPENAI_API_KEY") or settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
 
-    # Default to Gemini if configured, or db/runtime setting
+    # Default to Gemini as active provider
     active = db_settings.get("ACTIVE_LLM_PROVIDER") or get_active_provider() or "gemini"
-    if not db_settings.get("ACTIVE_LLM_PROVIDER") and bool(gemini_key):
-        active = "gemini"
 
     return ProviderSettingsResponse(
         active_provider=active,

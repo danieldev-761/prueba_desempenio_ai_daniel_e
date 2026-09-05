@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite+aiosqlite:///{str(Path(__file__).resolve().parent.parent.parent / 'data' / 'academy.db')}"
 
     # Security & Admin Access
+    ADMIN_DEFAULT_USER: str = Field(default="admin", description="Initial admin username seeded into DB")
+    ADMIN_DEFAULT_PASSWORD: str = Field(default="admin12345", description="Initial admin password seeded into DB (overridable via env)")
+    ADMIN_FORCE_PASSWORD_SYNC: bool = Field(default=False, description="If True, syncs admin password hash in DB with ADMIN_DEFAULT_PASSWORD on startup")
     ADMIN_API_KEY: str = Field(default="admin123", description="Secret key required to access /metrics and admin dashboard")
     JWT_SECRET: str = Field(default="vanguard-secret-key-32-chars-long-2026", description="JWT Signing Secret Key")
 
