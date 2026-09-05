@@ -67,14 +67,28 @@ SUPPORTED_CAMPUSES = ["bogota", "medellin"]
 
 UNSUPPORTED_PAYMENT_TERMS = ["cripto", "bitcoin", "usdt", "ethereum", "btc", "cheque", "fiado", "pagar despues"]
 
+SECURITY_AND_INTERNAL_PATTERNS = [
+    re.compile(r"\b(como\s+se\s+llama\s+el\s+admin|quien\s+es\s+el\s+admin|nombre\s+del\s+admin|datos\s+del\s+admin|cuenta\s+admin|panel\s+admin|superadmin|usuario\s+root|dame\s+el\s+admin)\b", re.IGNORECASE),
+    re.compile(r"\b(contrase[ñn]a\s+del\s+(admin|sistema|servidor|backend|root)|password\s+del\s+(admin|sistema|servidor))\b", re.IGNORECASE),
+    re.compile(r"\b(quien\s+te\s+(creo|programo|entreno|diseno|hizo)|quien\s+es\s+tu\s+(creador|dueno|desarrollador))\b", re.IGNORECASE),
+    re.compile(r"\b(system\s+prompt|prompt\s+del\s+sistema|instrucciones\s+del\s+sistema|ver\s+prompt|revela\s+tus\s+instrucciones|tu\s+prompt)\b", re.IGNORECASE),
+    re.compile(r"\b(base\s+de\s+datos\s+interna|api\s*key|token\s+secreto|servidor\s+interno|codigo\s+fuente|backend\s+de)\b", re.IGNORECASE),
+]
+
 OUT_OF_DOMAIN_PATTERNS = [
+    # Math & calculations
+    re.compile(r"(\b(suma|sumar|resta|restar|multiplica|multiplicar|divide|dividir|calcula|calculame|resuelve|cuanto\s+es|cuanto\s+da)\b|\d+\s*[\+\-\*\/]\s*\d+)", re.IGNORECASE),
+    # Prompt injection / Jailbreaks
+    re.compile(r"\b(ignora\s+(tus|las|todas)\s+instrucciones|olvida\s+(tus|las|el)\s+rol|actua\s+como|jailbreak|dan\s+mode|modo\s+dan|instrucciones\s+anteriores)\b", re.IGNORECASE),
+    # Code & scripting requests
+    re.compile(r"\b(escribe|genera|crea|hazme)\s+(un\s+codigo|un\s+script|un\s+programa|una\s+app|un\s+software|un\s+sql|un\s+exploit)\b", re.IGNORECASE),
+    # General non-academic topics
     re.compile(r"\b(chiste|chistes|broma|cuentame un chiste|hazme reir)\b", re.IGNORECASE),
     re.compile(r"\b(receta|cocinar|ingredientes|como hacer arroz|comida tipica)\b", re.IGNORECASE),
     re.compile(r"\b(futbol|partido|quien gano|campeonato|gol|champions|messi|cr7|seleccion colombia)\b", re.IGNORECASE),
     re.compile(r"\b(clima|pronostico del tiempo|va a llover)\b", re.IGNORECASE),
     re.compile(r"\b(horoscopo|signo zodiacal|astrologia|tarot)\b", re.IGNORECASE),
     re.compile(r"\b(politica|presidente|elecciones|alcalde|senado|partido politico)\b", re.IGNORECASE),
-    re.compile(r"\b(escribe un codigo|python script|desarrollame una app|hackear|sql injection)\b", re.IGNORECASE),
     re.compile(r"\b(diagnostico medico|dolor de cabeza|sintomas de|remedio casero)\b", re.IGNORECASE),
     re.compile(r"\b(cancion|poema|escribe una historia|inventa un cuento|letra de)\b", re.IGNORECASE),
 ]
@@ -149,17 +163,35 @@ class FrequentIssuesService:
         sess_key = session_id or "default_session"
         prev_state = self._session_state.get(sess_key)
 
-        # --- STEP 0: ZERO-TOKEN FAST DOMAIN & CLOSED CATALOG GUARDS (<1ms) ---
-        # 0.1: Out-of-Domain Non-Academic Topics
+        # --- STEP 0: ZERO-TOKEN FAST DOMAIN & SECURITY GUARDS (<1ms) ---
+        # 0.1: Security / Admin / Internal System Probes
+        for pattern in SECURITY_AND_INTERNAL_PATTERNS:
+            if pattern.search(query) or pattern.search(norm_query):
+                logger.info(f"Fast Guard: Security/Internal probe pattern matched '{pattern.pattern}'")
+                return {
+                    "category": "security_guard",
+                    "title": "Alcance y Seguridad Institucional",
+                    "response": (
+                        "Como asistente virtual de Vanguard, Academia de Idiomas Colombiana, no dispongo de acceso a información sobre administradores, credenciales ni arquitectura interna del sistema. "
+                        "Mi función es brindarte orientación oficial sobre nuestros programas de idiomas (Inglés, Francés, Alemán, Italiano y Portugués), horarios y matrículas. "
+                        "¿Sobre cuál de nuestros programas te gustaría recibir información?"
+                    ),
+                    "matched_rule": "security_internal_guard",
+                    "tier": 1,
+                    "is_escalate": False,
+                }
+
+        # 0.2: Out-of-Domain Non-Academic Topics, Math & Injections
         for pattern in OUT_OF_DOMAIN_PATTERNS:
             if pattern.search(query) or pattern.search(norm_query):
                 logger.info(f"Fast Guard: Out-of-domain pattern matched '{pattern.pattern}'")
                 return {
                     "category": "out_of_domain",
-                    "title": "Alcance Académico Institucional",
+                    "title": "Alcance Académico Vanguard",
                     "response": (
-                        "En la Academia de Idiomas Colombiana nos especializamos exclusivamente en programas académicos de idiomas "
-                        "(**Inglés**, **Francés**, **Alemán**, **Italiano** y **Portugués**), preparación para exámenes internacionales y certificaciones oficiales. "
+                        "En Vanguard, Academia de Idiomas Colombiana, nos especializamos exclusivamente en programas académicos de idiomas "
+                        "(Inglés, Francés, Alemán, Italiano y Portugués), preparación para exámenes internacionales y certificaciones oficiales. "
+                        "No realizo cálculos matemáticos, programación ni tareas de propósito general. "
                         "¿Sobre cuál de nuestros programas de idiomas te gustaría recibir información?"
                     ),
                     "matched_rule": "out_of_domain_guard",
@@ -167,18 +199,21 @@ class FrequentIssuesService:
                     "is_escalate": False,
                 }
 
-        # 0.2: Unsupported Languages Catalog Negation
-        words = set(norm_query.split())
-        matched_unsupported_lang = [lang for lang in UNSUPPORTED_LANGUAGES if lang in words or f" {lang} " in f" {norm_query} "]
-        has_supported_lang = any(lang in norm_query for lang in SUPPORTED_LANG_KEYS)
+        # 0.3: Unsupported Languages Catalog Negation (Strict Word Boundary)
+        matched_unsupported_lang = [
+            lang for lang in UNSUPPORTED_LANGUAGES 
+            if re.search(rf"\b{re.escape(lang)}\b", norm_query)
+        ]
+        has_supported_lang = any(re.search(rf"\b{re.escape(lang)}\b", norm_query) for lang in SUPPORTED_LANG_KEYS)
         if matched_unsupported_lang and not has_supported_lang:
-            logger.info(f"Fast Guard: Unsupported language '{matched_unsupported_lang[0]}' matched")
+            lang_name = matched_unsupported_lang[0].capitalize()
+            logger.info(f"Fast Guard: Unsupported language '{lang_name}' matched")
             return {
                 "category": "unsupported_language",
-                "title": "Catálogo Oficial de Idiomas",
+                "title": "Catálogo Oficial de Idiomas Vanguard",
                 "response": (
-                    f"Actualmente la Academia de Idiomas Colombiana no ofrece cursos de **{matched_unsupported_lang[0].capitalize()}**. "
-                    "Nuestra oferta oficial incluye 5 idiomas: **Inglés** (General y Negocios), **Francés**, **Alemán**, **Italiano** y **Portugués brasileño**, "
+                    f"Actualmente en Vanguard, Academia de Idiomas Colombiana, no ofrecemos cursos de **{lang_name}**. "
+                    "Nuestra oferta oficial incluye programas en 5 idiomas: **Inglés** (General y Negocios), **Francés**, **Alemán**, **Italiano** y **Portugués brasileño**, "
                     "además de preparación para exámenes internacionales (IELTS, TOEFL, Cambridge, DELF y Goethe)."
                 ),
                 "matched_rule": "unsupported_lang_guard",
@@ -186,18 +221,22 @@ class FrequentIssuesService:
                 "is_escalate": False,
             }
 
-        # 0.3: Unsupported Cities / Physical Campuses
-        matched_unsupported_city = [city for city in UNSUPPORTED_CITIES if city in words or f" {city} " in f" {norm_query} "]
-        has_supported_campus = any(campus in norm_query for campus in SUPPORTED_CAMPUSES)
-        if matched_unsupported_city and not has_supported_campus and ("sede" in norm_query or "presencial" in norm_query or "donde" in norm_query or "ciudad" in norm_query):
-            logger.info(f"Fast Guard: Unsupported city '{matched_unsupported_city[0]}' matched")
+        # 0.4: Unsupported Cities / Physical Campuses (Strict Word Boundary + Fixed f-string)
+        matched_unsupported_city = [
+            city for city in UNSUPPORTED_CITIES 
+            if re.search(rf"\b{re.escape(city)}\b", norm_query)
+        ]
+        has_supported_campus = any(re.search(rf"\b{re.escape(campus)}\b", norm_query) for campus in SUPPORTED_CAMPUSES)
+        if matched_unsupported_city and not has_supported_campus and any(k in norm_query for k in ["sede", "presencial", "donde", "ciudad", "ubicacion"]):
+            city_name = matched_unsupported_city[0].capitalize()
+            logger.info(f"Fast Guard: Unsupported city '{city_name}' matched")
             return {
                 "category": "unsupported_city",
-                "title": "Sedes Presenciales y Cobertura Virtual",
+                "title": "Sedes Presenciales y Cobertura Virtual Vanguard",
                 "response": (
-                    f"No contamos con sede física presencial en **{matched_unsupported_city[0].capitalize()}**. "
-                    "Nuestras sedes presenciales oficiales están ubicadas en **Bogotá** (Sede Chicó Norte) y **Medellín** (Sede El Poblado). "
-                    "Para {matched_unsupported_city[0].capitalize()} y todo el territorio nacional disponemos de **Modalidad 100% Virtual con Clases en Vivo**, "
+                    f"No contamos con sede física presencial en **{city_name}**. "
+                    "Nuestras sedes presenciales oficiales de Vanguard están ubicadas en **Bogotá** (Sede Chicó Norte) y **Medellín** (Sede El Poblado). "
+                    f"Para {city_name} y todo el territorio nacional disponemos de **Modalidad 100% Virtual con Clases en Vivo**, "
                     "con los mismos horarios, niveles del MCER y docentes certificados."
                 ),
                 "matched_rule": "unsupported_city_guard",
@@ -205,15 +244,18 @@ class FrequentIssuesService:
                 "is_escalate": False,
             }
 
-        # 0.4: Unsupported Payment Methods
-        matched_unsupported_pay = [pay for pay in UNSUPPORTED_PAYMENT_TERMS if pay in words or f" {pay} " in f" {norm_query} "]
+        # 0.5: Unsupported Payment Methods
+        matched_unsupported_pay = [
+            pay for pay in UNSUPPORTED_PAYMENT_TERMS 
+            if re.search(rf"\b{re.escape(pay)}\b", norm_query)
+        ]
         if matched_unsupported_pay:
             logger.info(f"Fast Guard: Unsupported payment term '{matched_unsupported_pay[0]}' matched")
             return {
                 "category": "unsupported_payment",
-                "title": "Medios Oficiales de Pago",
+                "title": "Medios Oficiales de Pago Vanguard",
                 "response": (
-                    "No aceptamos pagos en criptomonedas, cheques ni diferidos no bancarizados. "
+                    "En Vanguard no aceptamos pagos en criptomonedas, cheques ni diferidos no bancarizados. "
                     "Nuestros canales autorizados son: **PSE**, **Nequi**, **Daviplata**, **Tarjetas de Crédito/Débito** (Visa, MasterCard, Amex), "
                     "corresponsales bancarios (**Bancolombia, Efecty, SuRed**) y pasarela internacional (**Stripe / PayPal**)."
                 ),
@@ -222,7 +264,7 @@ class FrequentIssuesService:
                 "is_escalate": False,
             }
 
-        # 0.5: Gibberish / Meaningless Noise
+        # 0.6: Gibberish / Meaningless Noise
         vowels = sum(1 for c in norm_query if c in "aeiou")
         consonants = sum(1 for c in norm_query if c in "bcdfghjklmnpqrstvwxyz")
         total_letters = vowels + consonants

@@ -1,6 +1,8 @@
 import asyncio
+import re
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Add backend directory to path
@@ -44,6 +46,50 @@ async def poll_batch(client: httpx.AsyncClient, base_url: str, offset: int) -> t
         logger.warning(f"Telegram getUpdates returned HTTP {resp.status_code}: {resp.text}")
         await asyncio.sleep(5)
         return offset, []
+
+
+def parse_name_and_id(text: str) -> tuple[str | None, str | None]:
+    """
+    Parses full name and national ID (cédula) from student responses.
+    Handles formats like:
+    - [Carlos Rodríguez, 1020491823]
+    - Carlos Rodríguez, 1020491823
+    - Carlos Rodríguez - 1020491823
+    - Carlos Rodríguez 1020491823
+    """
+    cleaned = text.strip().strip("[]()")
+    
+    # 1. Try comma, dash, semicolon, pipe separation
+    for sep in [",", "-", ";", "|"]:
+        if sep in cleaned:
+            parts = [p.strip() for p in cleaned.split(sep) if p.strip()]
+            if len(parts) >= 2:
+                p0_digits = "".join(filter(str.isdigit, parts[0]))
+                p1_digits = "".join(filter(str.isdigit, parts[1]))
+                if len(p1_digits) >= 4 and len(p0_digits) < len(p1_digits):
+                    return parts[0], p1_digits
+                elif len(p0_digits) >= 4 and len(p1_digits) < len(p0_digits):
+                    return parts[1], p0_digits
+                else:
+                    return parts[0], parts[1]
+
+    # 2. Try regex separating letters and digits: "Carlos Rodriguez 1020491823"
+    match = re.search(r"^([a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+)\s+([0-9A-Za-z\-]+)$", cleaned)
+    if match:
+        name_part = match.group(1).strip()
+        id_part = match.group(2).strip()
+        if len(name_part) >= 2 and len(id_part) >= 4:
+            return name_part, id_part
+
+    # 3. Find any numeric sequence of 4-12 digits
+    digits = re.findall(r"\b\d{4,12}\b", cleaned)
+    if digits:
+        nat_id = digits[0]
+        name_cand = cleaned.replace(nat_id, "").strip(" ,-;|[]()")
+        if len(name_cand) >= 2:
+            return name_cand, nat_id
+
+    return None, None
 
 
 async def run_telegram_poller():
@@ -105,18 +151,18 @@ async def run_telegram_poller():
                         user_first_name = message.get("from", {}).get("first_name", "Usuario de Telegram")
                         print(f"\n[RECEIVED] Telegram from chat {chat_id} ({user_first_name}): '{text}'")
 
-                        if text.startswith("/start"):
+                        if text.startswith("/start") or text.lower() in ["/reset", "reiniciar", "menu"]:
                             USER_TELEGRAM_STATES.pop(str_chat_id, None)
                             welcome = (
                                 "👋 **¡Bienvenido a Vanguard - Academia de Idiomas!**\n\n"
-                                "Soy Vanguard Assistant, tu asesor académico virtual 24/7. Puedes consultarme con mucho gusto sobre cursos de idiomas (Inglés, Francés, Alemán, Italiano, Portugués), horarios, tarifas en COP, sedes en Bogotá y Medellín, certificaciones y proceso de matrícula."
+                                "Soy Vanguard Assistant, tu asesor académico virtual 24/7. Puedes consultarme sobre cursos de idiomas (Inglés, Francés, Alemán, Italiano, Portugués), horarios, tarifas en COP, sedes en Bogotá y Medellín, certificaciones y matrículas."
                             )
                             await send_telegram_message(chat_id=chat_id, text=welcome)
                             continue
 
-                        # 1. Check if user is in AWAITING_RATING state (Post-Session Review)
                         user_flow = USER_TELEGRAM_STATES.get(str_chat_id)
 
+                        # 1. State: AWAITING_RATING (or receiving 1-5 rating)
                         last_resolved_session = None
                         if text in ["1", "2", "3", "4", "5"]:
                             async with AsyncSessionLocal() as session:
@@ -142,25 +188,147 @@ async def run_telegram_poller():
                                         session_id=sess_id,
                                         national_id=nat_id,
                                         rating=rating_num,
-                                        notes="Submitted via Telegram Bot",
+                                        notes="Calificación enviada vía Telegram Bot",
                                     )
                                     session.add(review)
                                     await session.commit()
 
                                 USER_TELEGRAM_STATES.pop(str_chat_id, None)
-                                await send_telegram_message(
-                                    chat_id=chat_id,
-                                    text=f"⭐️ ¡Muchas gracias por calificar nuestro servicio con {rating_num}/5 estrellas! Tu opinión nos ayuda a mejorar continuamente."
+                                farewell = (
+                                    f"⭐️ **¡Muchas gracias por calificar nuestro servicio con {rating_num}/5 estrellas!**\n\n"
+                                    "Tu opinión es muy valiosa para Vanguard. Si deseas realizar otra consulta sobre nuestros cursos de idiomas, estaré aquí para ayudarte en cualquier momento. ¡Que tengas un excelente día!"
                                 )
+                                await send_telegram_message(chat_id=chat_id, text=farewell)
                                 continue
 
-                        # 2. Process query via LangGraph RAG
+                        # 2. State: AWAITING_STUDENT_DATA ([Nombre, Cédula])
+                        if user_flow and user_flow.get("state") == "AWAITING_STUDENT_DATA":
+                            full_name, national_id = parse_name_and_id(text)
+                            if not full_name or not national_id:
+                                prompt_retry = (
+                                    "Por favor indícanos tu **Nombre Completo y Número de Cédula** separados por coma para abrir tu sesión.\n\n"
+                                    "📌 *Ejemplo:* `Carlos Rodríguez, 1020491823`"
+                                )
+                                await send_telegram_message(chat_id=chat_id, text=prompt_retry)
+                                continue
+
+                            session_id = generate_deterministic_session_id(full_name, national_id)
+                            initial_inquiry = user_flow.get("inquiry", "")
+
+                            async with AsyncSessionLocal() as db:
+                                # Update or create StudentProfile
+                                stmt_p = select(StudentProfile).where(StudentProfile.national_id == national_id)
+                                res_p = await db.execute(stmt_p)
+                                profile = res_p.scalars().first()
+                                if profile:
+                                    profile.full_name = full_name
+                                    profile.telegram_chat_id = str_chat_id
+                                    profile.total_escalations_count += 1
+                                    profile.last_interaction_at = datetime.now(timezone.utc)
+                                else:
+                                    profile = StudentProfile(
+                                        national_id=national_id,
+                                        full_name=full_name,
+                                        channel="telegram",
+                                        telegram_chat_id=str_chat_id,
+                                        total_escalations_count=1,
+                                        total_messages_sent=1,
+                                    )
+                                    db.add(profile)
+
+                                # Create or update EscalatedSession
+                                stmt_s = select(EscalatedSession).where(EscalatedSession.session_id == session_id)
+                                res_s = await db.execute(stmt_s)
+                                active_s = res_s.scalars().first()
+                                if active_s:
+                                    active_s.status = "WAITING"
+                                    active_s.advisor_responded = False
+                                    active_s.telegram_chat_id = str_chat_id
+                                    active_s.initial_inquiry = initial_inquiry or active_s.initial_inquiry
+                                    active_s.resolved_at = None
+                                else:
+                                    active_s = EscalatedSession(
+                                        session_id=session_id,
+                                        full_name=full_name,
+                                        national_id=national_id,
+                                        channel="telegram",
+                                        telegram_chat_id=str_chat_id,
+                                        initial_inquiry=initial_inquiry,
+                                        status="WAITING",
+                                        advisor_responded=False,
+                                    )
+                                    db.add(active_s)
+
+                                # Add initial message from student
+                                if initial_inquiry:
+                                    db.add(LiveChatMessage(
+                                        session_id=session_id,
+                                        sender="user",
+                                        sender_name=full_name,
+                                        message=initial_inquiry,
+                                    ))
+
+                                # Add system connection message
+                                db.add(LiveChatMessage(
+                                    session_id=session_id,
+                                    sender="system",
+                                    sender_name="Sistema Vanguard",
+                                    message=f"Sesión establecida para {full_name} ({national_id}) vía Telegram.",
+                                ))
+                                await db.commit()
+
+                            USER_TELEGRAM_STATES[str_chat_id] = {
+                                "state": "IN_HUMAN_SESSION",
+                                "session_id": session_id,
+                                "full_name": full_name,
+                                "national_id": national_id,
+                            }
+
+                            confirm_msg = (
+                                f"✅ **¡Gracias, {full_name}! Tu sesión con soporte humano ha sido iniciada.**\n\n"
+                                f"🆔 *Sesión:* `{session_id}`\n"
+                                "Un Asesor Académico de Vanguard atenderá tu consulta en este chat en breve. Por favor aguarda un momento."
+                            )
+                            await send_telegram_message(chat_id=chat_id, text=confirm_msg)
+                            continue
+
+                        # 3. State: IN_HUMAN_SESSION (Live Advisor Chat)
+                        if user_flow and user_flow.get("state") == "IN_HUMAN_SESSION":
+                            sess_id = user_flow.get("session_id")
+                            f_name = user_flow.get("full_name", user_first_name)
+
+                            async with AsyncSessionLocal() as db:
+                                stmt_chk = select(EscalatedSession).where(EscalatedSession.session_id == sess_id)
+                                res_chk = await db.execute(stmt_chk)
+                                cur_sess = res_chk.scalars().first()
+
+                                if cur_sess and cur_sess.status in ["WAITING", "IN_PROGRESS", "ACTIVE"]:
+                                    # Forward message to advisor chat in Admin Portal
+                                    db.add(LiveChatMessage(
+                                        session_id=sess_id,
+                                        sender="user",
+                                        sender_name=f_name,
+                                        message=text,
+                                    ))
+                                    await db.commit()
+                                    print(f"[FORWARDED TO ADVISOR] Message from {f_name}: '{text}'")
+                                    continue
+                                else:
+                                    # Session was resolved or closed by advisor
+                                    USER_TELEGRAM_STATES[str_chat_id] = {
+                                        "state": "AWAITING_RATING",
+                                        "session_id": sess_id,
+                                        "national_id": user_flow.get("national_id"),
+                                    }
+
+                        # 4. Standard AI Query Processing via LangGraph
                         state = await workflow.ainvoke(
                             query=text,
                             session_id=f"tg_{chat_id}",
                             channel="telegram",
                         )
                         reply = state.get("generation", "")
+                        is_escalated = state.get("is_escalated", False) or state.get("status") == "ESCALATED_TO_HUMAN"
 
                         # Log to database
                         async with AsyncSessionLocal() as session:
@@ -180,8 +348,21 @@ async def run_telegram_poller():
                             session.add(entry)
                             await session.commit()
 
-                        await send_telegram_message(chat_id=chat_id, text=reply)
-                        print(f"[REPLIED] Sent answer to chat {chat_id} ({state.get('status')})")
+                        if is_escalated:
+                            USER_TELEGRAM_STATES[str_chat_id] = {
+                                "state": "AWAITING_STUDENT_DATA",
+                                "inquiry": text,
+                            }
+                            escalation_prompt = (
+                                f"{reply}\n\n"
+                                "👤 **Para conectarte con un Asesor Académico en tiempo real, por favor indícame tu [Nombre Completo, Cédula]:**\n"
+                                "📌 *Ejemplo:* `Carlos Rodríguez, 1020491823`"
+                            )
+                            await send_telegram_message(chat_id=chat_id, text=escalation_prompt)
+                            print(f"[ESCALATION INTAKE] Prompted user {chat_id} for [Nombre, Cédula]")
+                        else:
+                            await send_telegram_message(chat_id=chat_id, text=reply)
+                            print(f"[REPLIED] Sent answer to chat {chat_id} ({state.get('status')})")
 
         except asyncio.CancelledError:
             break

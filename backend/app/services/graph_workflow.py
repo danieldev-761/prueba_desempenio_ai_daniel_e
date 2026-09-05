@@ -300,11 +300,8 @@ class AcademyGraphWorkflow:
         return "retrieve"
 
     def route_relevance_gate(self, state: AgentState) -> str:
-        score = state.get("relevance_score", 0.0)
-        threshold = settings.RETRIEVAL_SIMILARITY_THRESHOLD
-        if score < threshold:
-            logger.info(f"Relevance Gate: Score {score:.4f} < threshold {threshold} -> Escalate to human")
-            return "escalate"
+        # Route all non-triage queries to generate; grounded prompt will answer with closed-world rules
+        # and will only escalate if explicit human action or policy [[ESCALATE]] is triggered
         return "generate"
 
     def route_grounding_verification(self, state: AgentState) -> str:
