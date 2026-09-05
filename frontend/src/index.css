@@ -6,24 +6,28 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
+    background-color: #070515;
+    color: #f1f5f9;
   }
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #070515;
+    color: #f1f5f9;
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar for dark theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #070515;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #1e1948;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #bdf052;
 }
