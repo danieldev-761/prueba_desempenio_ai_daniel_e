@@ -70,5 +70,12 @@ if DIST_DIR.exists() and (DIST_DIR / "index.html").exists():
         candidate = DIST_DIR / full_path
         if candidate.is_file():
             return FileResponse(candidate)
-        return FileResponse(DIST_DIR / "index.html")
+        return FileResponse(
+            DIST_DIR / "index.html",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
 

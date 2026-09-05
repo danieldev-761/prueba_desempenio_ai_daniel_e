@@ -43,4 +43,8 @@
   3. Cero secretos en código (OWASP A07): purga total de API keys y contraseñas en texto plano dentro del repositorio (`backend/app/core/config.py`, `backend/app/api/v1/endpoints/auth.py`, `backend/app/api/v1/endpoints/settings.py`).
   4. Autenticación y seeding por variables de entorno: configuración formal de variables (`ADMIN_DEFAULT_USER`, `ADMIN_DEFAULT_PASSWORD`, `ADMIN_FORCE_PASSWORD_SYNC`) en `backend/app/core/config.py`, `backend/.env.example` y `docker-compose.yml`, con verificación estricta de hash bcrypt en base de datos (`verify_password`).
   5. Endpoint seguro de cambio de contraseña: `POST /api/v1/auth/change-password` para rotación de credenciales desde el panel de administración.
-  6. Suite completa de pruebas automatizadas aprobada al 100% (44/44 tests pasados).
+- [Viernes]-[04/09/2026]-[23:58] : Corrección de contención visual del Navbar y prevención de caché en producción:
+  1. Prevención de desbordamiento de Staff: ampliación del contenedor flotante scrolled a `max-w-7xl` para otorgar 128px de margen adicional, evitando que el botón Staff toque o sobrepase el borde redondeado del pill.
+  2. Ajuste responsivo de Staff: visibilidad configurada a `hidden xl:inline-flex` en la barra superior (en celulares y tablets se accede limpia y ordenadamente desde el menú desplegable tipo drawer), previniendo la compresión de 4 botones simultáneos.
+  3. Cabeceras anti-caché en FastAPI: configuración de `Cache-Control: no-cache, no-store, must-revalidate` para `index.html` en `backend/app/main.py`, garantizando que los navegadores carguen siempre los últimos bundles JavaScript y CSS sin retener versiones antiguas.
+  4. Regeneración del build de producción en `frontend/dist/`.

@@ -156,8 +156,8 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
         <div 
           className={`mx-auto pointer-events-auto transition-all duration-500 ease-out flex items-center justify-between ${
             isScrolled 
-              ? 'max-w-6xl border border-white/15 rounded-full px-4 sm:px-6 py-2.5 shadow-[0_16px_40px_-6px_rgba(0,0,0,0.9),0_0_24px_rgba(189,240,82,0.06)] ring-1 ring-white/10' 
-              : 'max-w-7xl border-b border-white/10 px-5 sm:px-6 py-3.5'
+              ? 'max-w-7xl border border-white/15 rounded-full px-4 sm:px-6 py-2.5 shadow-[0_16px_40px_-6px_rgba(0,0,0,0.9),0_0_24px_rgba(189,240,82,0.06)] ring-1 ring-white/10' 
+              : 'max-w-7xl border-b border-white/10 px-4 sm:px-6 py-3.5'
           }`}
           style={{
             backgroundColor: isScrolled ? 'rgba(10, 7, 34, 0.75)' : 'rgba(7, 5, 21, 0.70)',
@@ -177,11 +177,11 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
           </a>
 
           {/* Nav links with real-time active indicator */}
-          <nav className="hidden xl:flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/10 text-xs font-medium">
+          <nav className="hidden xl:flex items-center gap-0.5 bg-white/5 p-1 rounded-full border border-white/10 text-xs font-medium">
             <a 
               href="#inicio" 
               onClick={scrollToHome}
-              className={`inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
+              className={`inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'inicio' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -194,7 +194,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#programas" 
               onClick={(e) => scrollToSection(e, 'programas')}
-              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
+              className={`inline-flex items-center justify-center py-1.5 px-2.5 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'programas' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -206,7 +206,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#modalidades" 
               onClick={(e) => scrollToSection(e, 'modalidades')}
-              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
+              className={`inline-flex items-center justify-center py-1.5 px-2.5 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'modalidades' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -218,7 +218,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#horarios" 
               onClick={(e) => scrollToSection(e, 'horarios')}
-              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
+              className={`inline-flex items-center justify-center py-1.5 px-2.5 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'horarios' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -230,7 +230,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#precios" 
               onClick={(e) => scrollToSection(e, 'precios')}
-              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
+              className={`inline-flex items-center justify-center py-1.5 px-2.5 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'precios' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -242,7 +242,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             <a 
               href="#placement-test" 
               onClick={(e) => scrollToSection(e, 'placement-test')}
-              className={`inline-flex items-center justify-center py-1.5 px-3.5 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
+              className={`inline-flex items-center justify-center py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-200 leading-none whitespace-nowrap ${
                 activeSection === 'placement-test' 
                   ? 'text-brand-lime bg-brand-lime/15 font-bold shadow-sm' 
                   : 'text-brand-lime/90 hover:text-brand-lime hover:bg-white/5'
@@ -253,13 +253,13 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
           </nav>
 
           {/* Action buttons and mobile trigger */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {/* Telegram Channel Button */}
             <a
               href={TELEGRAM_BOT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center justify-center gap-1.5 h-8 px-3.5 rounded-full font-semibold text-xs text-white bg-[#229ED9] hover:bg-[#1e8ec3] transition-all hover:scale-105 shadow-sm shadow-[#229ED9]/25 flex-shrink-0 leading-none text-center whitespace-nowrap"
+              className="hidden sm:inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-full font-semibold text-xs text-white bg-[#229ED9] hover:bg-[#1e8ec3] transition-all hover:scale-105 shadow-sm shadow-[#229ED9]/25 flex-shrink-0 leading-none text-center whitespace-nowrap"
               title="Abrir Bot Oficial en Telegram"
             >
               <FaTelegramPlane className="text-xs flex-shrink-0" />
@@ -269,7 +269,7 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             {/* Vanguard AI Web Assistant */}
             <button
               onClick={onNavigateToChat}
-              className="inline-flex items-center justify-center gap-1.5 h-8 px-3 sm:px-3.5 rounded-full font-bold text-xs text-brand-dark bg-brand-lime hover:bg-[#b0f55c] transition-all hover:scale-105 shadow-sm shadow-brand-lime/25 flex-shrink-0 leading-none text-center whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-full font-bold text-xs text-brand-dark bg-brand-lime hover:bg-[#b0f55c] transition-all hover:scale-105 shadow-sm shadow-brand-lime/25 flex-shrink-0 leading-none text-center whitespace-nowrap"
               title="Chatear con Vanguard AI"
             >
               <FaRobot className="text-xs flex-shrink-0" />
@@ -279,10 +279,10 @@ export default function LandingPage({ onNavigateToChat, onNavigateToAdmin }) {
             {/* Staff / Admin Access */}
             <button
               onClick={onNavigateToAdmin}
-              className="hidden md:inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-full border border-white/20 text-white/80 hover:text-white hover:border-white/40 bg-white/5 hover:bg-white/10 text-xs font-medium transition-all flex-shrink-0 leading-none text-center whitespace-nowrap"
+              className="hidden xl:inline-flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-full border border-white/20 text-white/80 hover:text-white hover:border-white/40 bg-white/5 hover:bg-white/10 text-xs font-medium transition-all flex-shrink-0 leading-none text-center whitespace-nowrap"
               title="Acceso Portal Staff / Administrativo"
             >
-              <FaShieldAlt className="text-xs flex-shrink-0" />
+              <FaShieldAlt className="text-xs text-brand-lime flex-shrink-0" />
               <span>Staff</span>
             </button>
 
