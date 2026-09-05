@@ -81,21 +81,27 @@ Replaces linear automations with a state-aware Directed Acyclic Graph (DAG):
    * **Node 4 (`verify_grounding`):** Validates if the answer acknowledged missing data or returned `[[ESCALATE]]`. If ungrounded or out of scope, routes to `escalate`.
    * **Node 5 (`finalize`):** Stores valid grounded answers in semantic cache and returns the client payload.
 
-### 2.3 LLM & Embeddings Abstraction (`backend/app/services/llm_factory.py`)
-Uses the **Factory Pattern** driven by environment variables (`LLM_PROVIDER=openai` or `LLM_PROVIDER=gemini`):
-* **Gemini (Primary Provider):** `ChatGoogleGenerativeAI(model="gemini-2.5-flash")` + `GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")` (3072 dimensions, ADR-010).
+### 2.3 Dynamic Multi-LLM & Embeddings Abstraction (`backend/app/services/llm_factory.py`)
+Uses the **Dynamic Factory Pattern** supporting runtime switching and database-backed configuration overrides (`system_settings` table):
+* **Google Gemini (Default Primary Provider):** `ChatGoogleGenerativeAI(model="gemini-2.5-flash")` + `GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")` (3072 dimensions, ADR-010).
+* **Groq LPU (High-Speed Inference):** `ChatGroq(model="llama-3.3-70b-versatile", temperature=0.0)` for ultra-low latency token generation.
 * **OpenAI (Secondary Provider):** `ChatOpenAI(model="gpt-4o-mini", temperature=0.0)` + `OpenAIEmbeddings(model="text-embedding-3-small")`.
+* **Runtime Sync:** Administrators can toggle the active provider or supply custom API keys dynamically from the Staff Portal via `POST /api/v1/settings/providers` without server restarts.
 
 ### 2.4 Vector Engine & Semantic Cache (`backend/app/services/vector_store.py`)
-* **Engine:** ChromaDB in persistent client mode stored at `./backend/data/chroma_db` with `hnsw:space="cosine"`.
+* **Engine:** ChromaDB in persistent client mode stored at `/app/data/chroma_db` (or `./backend/data/chroma_db`) with `hnsw:space="cosine"`.
 * **Collections:**
   1. `academy_docs`: Ingests 3 core business documents (`cursos_y_modalidades.md`, `precios_y_metodos_de_pago.md`, `inscripciones_y_certificaciones.md`) chunked via `RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)`.
-  2. `semantic_cache`: Stores previously resolved queries and answers. Hit criteria: Cosine similarity $\ge 0.82$ (Cosine distance $\le 0.18$).
+  2. `semantic_cache`: Stores previously resolved queries and answers. Hit criteria: Cosine similarity $\ge 0.74$ (Normalized cosine distance $\le 0.26$, ADR-014).
 
-### 2.5 Relational Telemetry & Persistence (`backend/app/models/` & `backend/app/db/`)
-* **Engine:** SQLite with asynchronous I/O via **SQLAlchemy** (`sqlite+aiosqlite:///./backend/data/academy.db`).
+### 2.5 Relational Persistence & Security (`backend/app/models/` & `backend/app/db/`)
+* **Engine:** SQLite with asynchronous I/O via **SQLAlchemy** (`sqlite+aiosqlite:////app/data/academy.db`).
 * **Entities:**
-  * `TelemetryLog`: `id`, `session_id`, `timestamp`, `channel`, `query`, `response`, `status` (`RESOLVED_BY_FAQ_TRIAGE`, `RESOLVED_BY_CACHE`, `RESOLVED_BY_RAG`, `ESCALATED_TO_HUMAN`), `latency_ms`, `prompt_tokens`, `completion_tokens`, `cost_usd`.
+  * `AdminUser`: `id`, `username`, `password_hash` (bcrypt), `full_name`, `role`, `is_active`, `created_at`.
+  * `SystemSetting`: `id`, `key`, `value`, `description`, `is_secret`, `updated_at`.
+  * `ChatSessionRecord`: `id`, `session_id`, `channel`, `student_name`, `created_at`, `updated_at`, `total_messages`.
+  * `ChatMessageRecord`: `id`, `session_id`, `role`, `content`, `status`, `confidence_score`, `cost_usd`, `latency_ms`, `sources`, `created_at`.
+  * `TelemetryLog`: `id`, `session_id`, `timestamp`, `channel`, `user_query`, `bot_response`, `status`, `latency_ms`, `prompt_tokens`, `completion_tokens`, `cost_usd`.
   * `EscalatedSession`: `id`, `session_id`, `full_name`, `national_id`, `channel`, `status`, `created_at`.
   * `LiveChatMessage`: `id`, `session_id`, `sender`, `message`, `timestamp`.
   * `StudentProfile`: `id`, `national_id`, `full_name`, `total_escalations_count`, `last_interaction_at`.
@@ -105,7 +111,7 @@ Uses the **Factory Pattern** driven by environment variables (`LLM_PROVIDER=open
 
 ## 3. Containerization & Deployment Strategy
 
-* **Docker:** Multi-stage, non-root container (`backend/Dockerfile`) with automated startup entrypoint (`run.sh`) that ingests documents on boot if the database is unpopulated.
-* **Frontend:** React + Vite + Tailwind CSS containerized with Nginx Alpine (`frontend/Dockerfile`) deployed on Railway or locally served.
-* **Backend:** Deployable on Railway or Docker Compose with persistent data volume mounted at `/app/data`.
-* **Platform:** Standardized exclusively on **Railway** container infrastructure under the Starter / Trial plan.
+* **Unified Fullstack Container:** Single multi-stage production Dockerfile (`Dockerfile` at repository root) packaging both backend (Python 3.11 with `uv`) and frontend precompiled static SPA (`dist/` mounted via FastAPI `StaticFiles`).
+* **Resilient Persistent Storage:** Persistent volume mounted at `/app/data` housing `academy.db` and `chroma_db/`. Seed documents are baked into `/app/seed_data/raw` and auto-hydrated into `/app/data/raw/` on first volume initialization.
+* **Production Anti-Cache Policy:** `index.html` is served with `Cache-Control: no-cache, no-store, must-revalidate`, guaranteeing that clients immediately receive newly compiled assets upon redeploy.
+* **Platform:** Hosted on **Railway** container PaaS with health checks at `/health` and supervisor-managed Telegram background workers.

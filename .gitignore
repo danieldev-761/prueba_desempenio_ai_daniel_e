@@ -45,4 +45,8 @@ frontend_inspiracion/
 prompts_ui*.md
 ui_chatbot.html
 
+# SENA Competency Certification Evidence Folder (Local Only)
+evidencias_certificacion_sena/
+
+
 

@@ -317,9 +317,62 @@ Accepted.
 * **Pros:** Complete zero-downtime flexibility to switch LLM backends and test latency/costs across Groq, Gemini, and OpenAI; enterprise-grade JWT admin security; 99.99% uptime resilience for Telegram bot polling in Railway; full historical auditability of all visitor interactions.
 * **Cons:** Runtime overrides take precedence over `.env` defaults until cleared by administrator.
 
+---
 
+## ADR-017: Unified Static SPA Distribution, Relative API Routing, and Production Anti-Cache Architecture
 
+### Context
+In cloud production deployments, hosting the React frontend on a separate service or misconfiguring its base URL caused CORS preflight failures (`ERR_FAILED`) and browser connection attempts to `http://localhost:8000/api/v1`. Furthermore, aggressive browser HTTP caching kept serving outdated bundle hashes (`index-Dse4KVKs.css`), preventing clients from receiving visual bug fixes and interface updates.
 
+### Decision
+1. **Unified Fullstack Container:** Serve the precompiled React frontend directly from FastAPI static files mounted at `/` with HTML5 SPA history fallback routing (`/app/dist/index.html`).
+2. **Dynamic Relative API URL:** Configure `frontend/src/services/api.js` to default to relative path `/api/v1` when `VITE_API_URL` is empty, ensuring that requests always target the current domain in production without CORS overhead.
+3. **Aggressive Anti-Cache Headers:** In `backend/app/main.py`, serve the SPA `index.html` with explicit response headers: `Cache-Control: no-cache, no-store, must-revalidate`, `Pragma: no-cache`, and `Expires: 0`.
 
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Eliminates 100% of CORS issues in production, enables single-container deployment on Railway, and guarantees users always receive the latest frontend JS/CSS bundles immediately upon redeployment.
+* **Cons:** Rebuilding frontend assets requires running `pnpm run build` prior to Docker container compilation.
+
+---
+
+## ADR-018: Vanguard Design System Theme Palette Registration and CSS Purge Prevention
+
+### Context
+During `vite build`, Tailwind CSS executes rigorous tree-shaking and purge analysis against the codebase. Because custom Vanguard color classes (`bg-brand-lime`, `text-brand-lime`, `border-brand-lime`, `bg-brand-dark`, `bg-brand-navy`, `font-display`) were not formally declared in `frontend/tailwind.config.js` under `theme.extend.colors.brand`, Tailwind treated them as unrecognized classes and stripped them from the compiled production CSS bundle (`dist/assets/*.css`). Consequently, production deployments appeared colorless and washed out on light default browser backgrounds.
+
+### Decision
+1. **Formal Palette Registration:** Register the complete Vanguard design token palette in `frontend/tailwind.config.js` under `colors.brand`:
+   - `lime: '#bdf052'`, `dark: '#070515'`, `navy: '#0c0926'`, `blue: '#38bdf8'`, `yellow: '#facc15'`, `purple: '#c084fc'`, `orange: '#fb923c'`.
+2. **Display Typography:** Register `fontFamily.display: ['Syne', 'Plus Jakarta Sans', 'system-ui', 'sans-serif']` and import Google Fonts `Syne` (weights 600-900) in `frontend/index.html`.
+3. **Dark Base Styles & Scrollbar:** Enforce native background `#070515` and `#f1f5f9` text on `html` and `body` tags in `frontend/src/index.css` and `frontend/index.html`, accompanied by custom dark scrollbars with `#bdf052` hover states.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Guarantees 100% visual parity between local development and production environments, retains all high-contrast neon accents, and prevents unstyled layout flashes.
+* **Cons:** Minor increase in production CSS bundle size (~3.9 kB), well within optimal performance thresholds.
+
+---
+
+## ADR-019: Cloud Persistent Volume Resilience and Knowledge Base Seed Hydration
+
+### Context
+In containerized cloud platforms (such as Railway), attaching an external persistent volume to `/app/data` creates a blank storage volume that overlays (masks) whatever files were copied into `/app/data` during image build (`COPY backend/data/raw /app/data/raw`). When the container performed its cold-boot vector ingestion (`ingest.py`), it found `/app/data/raw` empty, resulting in 0 ingested chunks and an ungrounded assistant.
+
+### Decision
+1. **Image Seed Layer:** Copy raw knowledge base documents to an unmasked backup path inside the image (`COPY --chown=appuser:appgroup backend/data/raw /app/seed_data/raw`).
+2. **Startup Volume Hydration:** In `backend/scripts/run.sh`, verify if `/app/data/raw` is empty upon container startup; if so, automatically copy seed documents from `/app/seed_data/raw/*` to `/app/data/raw/`.
+3. **Ingestion Fallback Strategy:** In `backend/scripts/ingest.py`, implement `get_raw_dir()` to automatically fall back to `/app/seed_data/raw` if `/app/data/raw` is absent or unpopulated.
+
+### Status
+Accepted.
+
+### Consequences
+* **Pros:** Enables true persistent storage for SQLite (`academy.db`) and ChromaDB (`chroma_db`) on Railway without risking loss of the raw knowledge base documents on initial volume creation.
+* **Cons:** Updates to static `.md` documents require either rebuilding the image or updating the volume.
 
 

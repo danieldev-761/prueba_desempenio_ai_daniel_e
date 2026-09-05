@@ -97,3 +97,11 @@
 - [x] **TASK-8.4:** Fix long-running Telegram bot stability in Railway container deployments with client recycling, exponential backoff, and a self-healing supervisor loop in `backend/scripts/run.sh`.
 - [x] **TASK-8.5:** Redesign frontend UI with WebGL Three.js Hero particle cursor (`GhostCursor.jsx`), rich Vanguard institutional landing page (`LandingPage.jsx`), Perplexity-style AI assistant (`VanguardAssistant.jsx`), and dedicated Admin Management Portal (`AdminPortal.jsx`).
 - [x] **TASK-8.6:** Write automated integration and resilience tests (`backend/tests/integration/test_auth_and_settings.py`, `backend/tests/unit/test_telegram_resilience.py`), verifying 100% pass rate (44/44 tests).
+
+---
+
+## Phase 9: Production Resilience, Volume Persistence & Theme Integrity
+- [x] **TASK-9.1:** Author persistent volume resilience for Railway deployments (`/app/data`), implementing fallback and container seed hydration (`/app/seed_data/raw`) in `run.sh` and `ingest.py` to prevent knowledge base masking on fresh volume mounts.
+- [x] **TASK-9.2:** Configure complete Vanguard theme palette (`brand-lime: #bdf052`, `brand-dark: #070515`, `brand-navy: #0c0926`, etc.) and `display` typography (`Syne`) in `tailwind.config.js`, eliminating production CSS purge (tree-shaking) drops.
+- [x] **TASK-9.3:** Implement client-side anti-cache headers (`Cache-Control: no-cache, no-store, must-revalidate`) on SPA index endpoints to ensure instant bundle freshness across deployments.
+
